@@ -1,0 +1,326 @@
+{
+  "schema_version": 1,
+  "blueprint": {
+    "id": "aws-eks-bnk241-traffic",
+    "version": "1.0.0",
+    "name": "Create EKS + BNK 2.4.1 Traffic-Ready",
+    "description": "Provision a new AWS EKS cluster with an HP TMM node pool, install the full BNK 2.4.1 platform, and activate the license — production defaults locked in, override sizing if needed."
+  },
+  "bnk_version": "2.4.1",
+  "category": "infrastructure",
+  "cloud_provider": "aws",
+  "compatibility": {
+    "supported_platform_profiles": ["aws_eks"],
+    "required_capabilities": []
+  },
+  "icon": "Cloud",
+  "color": "orange",
+  "estimated_time": "40-60 minutes",
+  "estimated_cost": "AWS usage-based (cluster + worker & HP nodes + NAT)",
+  "difficulty": "intermediate",
+  "maturity": "alpha",
+  "tags": [
+    "aws",
+    "eks",
+    "kubernetes",
+    "bnk",
+    "bnk-2.4.1",
+    "cluster-create",
+    "hp-nodes",
+    "tmm",
+    "traffic-ready",
+    "opinionated"
+  ],
+  "prerequisites": [
+    {
+      "type": "credential_template",
+      "name": "aws_credentials",
+      "description": "AWS credential template (any of Forge's three auth methods). Principal needs VPC + EKS + IAM create privileges."
+    },
+    {
+      "type": "project_secret",
+      "name": "cne_pull_secret",
+      "description": "F5 FAR registry credentials."
+    },
+    {
+      "type": "project_secret",
+      "name": "jwt_token",
+      "description": "F5 BNK License JWT."
+    }
+  ],
+  "inputs": {
+    "required": [
+      {
+        "name": "eks_cluster_name",
+        "type": "string",
+        "description": "Name for the new EKS cluster.",
+        "order": 20
+      }
+    ],
+    "optional": [
+      {
+        "name": "aws_access_key_id",
+        "type": "string",
+        "description": "Auto-filled from the AWS credential template.",
+        "sensitive": true,
+        "source": "credential_template",
+        "source_field": "aws_access_key_id",
+        "order": 10
+      },
+      {
+        "name": "aws_secret_access_key",
+        "type": "string",
+        "description": "Auto-filled from the AWS credential template.",
+        "sensitive": true,
+        "source": "credential_template",
+        "source_field": "aws_secret_access_key",
+        "order": 11
+      },
+      {
+        "name": "aws_region",
+        "type": "string",
+        "description": "AWS region to deploy into. Auto-filled from the project region.",
+        "source": "project",
+        "source_field": "region",
+        "order": 12
+      },
+      {
+        "name": "aws_session_token",
+        "type": "string",
+        "description": "Auto-filled from the AWS credential template (STS/SSO only).",
+        "default": "",
+        "sensitive": true,
+        "source": "credential_template",
+        "source_field": "aws_session_token",
+        "order": 13
+      },
+      {
+        "name": "jwt_token",
+        "type": "string",
+        "description": "F5 BNK License JWT. Resolved from the jwt_token project secret.",
+        "sensitive": true,
+        "source": "project_secret",
+        "order": 21
+      },
+      {
+        "name": "cne_pull_secret",
+        "type": "string",
+        "description": "F5 FAR registry pull credentials. Resolved from the cne_pull_secret project secret.",
+        "sensitive": true,
+        "source": "project_secret",
+        "order": 22
+      },
+      {
+        "name": "worker_instance_type",
+        "type": "string",
+        "description": "EC2 instance type for the default (BNK dSSM) node group. Default m6i.4xlarge is the validated BNK 2.4.1 Small minimum.",
+        "default": "m6i.4xlarge",
+        "order": 30
+      },
+      {
+        "name": "worker_count_per_az",
+        "type": "number",
+        "description": "Default-pool nodes per AZ. Minimum 3 total for dSSM quorum. Default 1 per AZ across 3 AZs = 3 total.",
+        "default": 1,
+        "order": 31
+      },
+      {
+        "name": "hp_instance_type",
+        "type": "string",
+        "description": "EC2 instance type for HP TMM nodes. Default c5n.4xlarge (16 vCPU) fits the BNK 2.4.1 Small f5-tmm pod (~4.7 vCPU + 4Gi hugepages) and supports the 3 required ENIs; c5n.xlarge is too small.",
+        "default": "c5n.4xlarge",
+        "order": 32
+      },
+      {
+        "name": "hp_node_count_per_az",
+        "type": "number",
+        "description": "HP TMM nodes per AZ.",
+        "default": 1,
+        "order": 33
+      },
+      {
+        "name": "deployment_size",
+        "type": "string",
+        "description": "CNEInstance deployment size: Small / Medium / Large / Max. Small is validated against m6i.4xlarge × 3.",
+        "default": "Small",
+        "order": 40
+      },
+      {
+        "name": "tmm_replicas",
+        "type": "number",
+        "description": "TMM replicas. Default 1 — a single-TMM demo data-plane. Set 0 to auto-derive from AZ × HP node count for a multi-TMM HA topology.",
+        "default": 1,
+        "order": 41
+      },
+      {
+        "name": "vip_cidr",
+        "type": "string",
+        "description": "CIDR for BNK Gateway VIP allocation. Empty = auto-discover from HP-nodes TMM-external subnets.",
+        "default": "",
+        "order": 42
+      }
+    ]
+  },
+  "modules": [
+    {
+      "id": "cluster-create",
+      "name": "EKS Cluster Create",
+      "module": "modules/eks-cluster-create",
+      "version": "0.3.0-beta",
+      "depends_on": [],
+      "inputs": {
+        "aws_access_key_id": "${aws_access_key_id}",
+        "aws_secret_access_key": "${aws_secret_access_key}",
+        "aws_session_token": "${aws_session_token}",
+        "aws_region": "${aws_region}",
+        "eks_cluster_name": "${eks_cluster_name}",
+        "worker_instance_type": "${worker_instance_type}",
+        "worker_count_per_az": "${worker_count_per_az}",
+        "tag_private_subnets_for_tmm": false,
+        "eks_cluster_version": "1.32"
+      }
+    },
+    {
+      "id": "hp-nodes",
+      "name": "HP TMM Node Pool",
+      "module": "modules/eks-cluster-hp-nodes",
+      "version": "0.5.0-alpha",
+      "depends_on": ["cluster-create"],
+      "inputs": {
+        "aws_access_key_id": "${aws_access_key_id}",
+        "aws_secret_access_key": "${aws_secret_access_key}",
+        "aws_session_token": "${aws_session_token}",
+        "aws_region": "${aws_region}",
+        "instance_type": "${hp_instance_type}",
+        "node_count_per_az": "${hp_node_count_per_az}"
+      }
+    },
+    {
+      "id": "install-multus",
+      "name": "Install Multus CNI",
+      "module": "modules/eks-cluster-install-multus",
+      "version": "0.2.0-alpha",
+      "depends_on": ["hp-nodes"],
+      "inputs": {}
+    },
+    {
+      "id": "install-hugepages",
+      "name": "Install Hugepages DaemonSet",
+      "module": "modules/eks-cluster-install-hugepages",
+      "version": "0.1.0-alpha",
+      "depends_on": ["hp-nodes", "install-multus"],
+      "inputs": {}
+    },
+    {
+      "id": "tmm-nads",
+      "name": "TMM Host-Device Dataplane",
+      "module": "modules/eks-cluster-install-tmm-nads",
+      "version": "1.0.0-alpha",
+      "depends_on": ["hp-nodes", "install-multus", "bnk-prereqs"],
+      "inputs": {
+        "aws_access_key_id": "${aws_access_key_id}",
+        "aws_secret_access_key": "${aws_secret_access_key}",
+        "aws_session_token": "${aws_session_token}",
+        "aws_region": "${aws_region}",
+        "eks_cluster_name": "${eks_cluster_name}",
+        "nad_namespace": "f5-cne-system"
+      }
+    },
+    {
+      "id": "bnk-prereqs",
+      "name": "BNK Prerequisites",
+      "module": "modules/eks-cluster-install-bnk-prereqs",
+      "version": "1.1.0",
+      "depends_on": ["cluster-create", "hp-nodes", "install-multus"],
+      "inputs": {
+        "cluster_name": "${eks_cluster_name}",
+        "cne_pull_secret": "${cne_pull_secret}",
+        "operator_namespace": "f5-cne-core",
+        "instance_namespace": "f5-cne-system"
+      }
+    },
+    {
+      "id": "cert-manager",
+      "name": "Cert-Manager",
+      "module": "modules/eks-cluster-install-cert-manager",
+      "version": "3.2.0",
+      "depends_on": ["bnk-prereqs"],
+      "inputs": {
+        "cluster_name": "${eks_cluster_name}"
+      }
+    },
+    {
+      "id": "cert-issuer",
+      "name": "BNK Cert Issuer",
+      "module": "modules/eks-cluster-install-cert-issuer",
+      "version": "1.0.0",
+      "depends_on": ["cert-manager"],
+      "inputs": {}
+    },
+    {
+      "id": "flo",
+      "name": "F5 Lifecycle Operator",
+      "module": "modules/eks-cluster-install-flo",
+      "version": "2.1.0",
+      "depends_on": ["cert-issuer"],
+      "inputs": {
+        "cluster_name": "${eks_cluster_name}"
+      }
+    },
+    {
+      "id": "cneinstall",
+      "name": "CNEInstance + IRSA + Host-Device",
+      "module": "modules/eks-cluster-cneinstall",
+      "version": "1.3.0",
+      "depends_on": ["flo", "tmm-nads", "install-hugepages"],
+      "inputs": {
+        "aws_access_key_id": "${aws_access_key_id}",
+        "aws_secret_access_key": "${aws_secret_access_key}",
+        "aws_session_token": "${aws_session_token}",
+        "aws_region": "${aws_region}",
+        "eks_cluster_name": "${eks_cluster_name}",
+        "deployment_size": "${deployment_size}",
+        "tmm_replicas": "${tmm_replicas}",
+        "vip_cidr": "${vip_cidr}",
+        "network_attachments": ["external-netdevice", "internal-netdevice"],
+        "jwt_token": "${jwt_token}"
+      }
+    },
+    {
+      "id": "tmm-heal",
+      "name": "TMM Cold-Start Heals",
+      "module": "modules/eks-cluster-tmm-heal",
+      "version": "1.0.0-alpha",
+      "depends_on": ["license-gate"],
+      "inputs": {
+        "aws_access_key_id": "${aws_access_key_id}",
+        "aws_secret_access_key": "${aws_secret_access_key}",
+        "aws_session_token": "${aws_session_token}",
+        "aws_region": "${aws_region}",
+        "eks_cluster_name": "${eks_cluster_name}"
+      }
+    },
+    {
+      "id": "ready-gate",
+      "name": "CNEInstance Readiness Gate",
+      "module": "modules/eks-cluster-cneinstance-ready-gate",
+      "version": "0.1.0-alpha",
+      "depends_on": ["tmm-heal"],
+      "inputs": {
+        "instance_namespace": "f5-cne-system",
+        "instance_name": "default-f5-cne-controller"
+      }
+    },
+    {
+      "id": "license-gate",
+      "name": "BNK License Activation Gate",
+      "module": "modules/eks-cluster-license-activation-gate",
+      "version": "0.2.0-alpha",
+      "depends_on": ["cneinstall"],
+      "inputs": {
+        "jwt_token": "${jwt_token}",
+        "license_namespace": "f5-cne-core"
+      }
+    }
+  ]
+}

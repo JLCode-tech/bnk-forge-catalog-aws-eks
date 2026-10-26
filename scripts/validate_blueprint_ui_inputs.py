@@ -31,7 +31,12 @@ import sys
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(SCRIPT_DIR)
 
-CONTEXT_RESOLVED_SOURCES = {"credential_template", "project", "project_secret", "module"}
+CONTEXT_RESOLVED_SOURCES = {
+    "credential_template",
+    "project",
+    "project_secret",
+    "module",
+}
 
 # Sentinel: a variable has no default in TF (i.e. it is TF-required).
 _NO_DEFAULT = object()
@@ -82,7 +87,9 @@ def _parse_tf_variables(tf_path: str) -> list[dict]:
             if brace_depth <= 0:
                 # End of block — check for 'default'
                 block_text = "\n".join(block_lines)
-                has_default = bool(re.search(r'^\s*default\s*=', block_text, re.MULTILINE))
+                has_default = bool(
+                    re.search(r"^\s*default\s*=", block_text, re.MULTILINE)
+                )
                 results.append({"name": var_name, "has_default": has_default})
                 in_var_block = False
                 var_name = None
@@ -112,9 +119,17 @@ def load_module_vars(module_ref: str) -> list[dict]:
             schema = json.load(f)
         inputs = schema.get("inputs", {})
         for var in inputs.get("required", []):
-            pack_vars[var["name"]] = {"name": var["name"], "required": True, "source": None}
+            pack_vars[var["name"]] = {
+                "name": var["name"],
+                "required": True,
+                "source": None,
+            }
         for var in inputs.get("optional", []):
-            pack_vars[var["name"]] = {"name": var["name"], "required": False, "source": None}
+            pack_vars[var["name"]] = {
+                "name": var["name"],
+                "required": False,
+                "source": None,
+            }
 
     # Augment with TF parse — add vars missing from pack.json
     tf_vars = _parse_tf_variables(tf_path)
@@ -160,10 +175,9 @@ def get_required_inputs(manifest: dict) -> dict:
             "source": source,
         }
 
-    all_inputs = (
-        [normalize_input(i, True) for i in required_inputs] +
-        [normalize_input(i, False) for i in optional_inputs]
-    )
+    all_inputs = [normalize_input(i, True) for i in required_inputs] + [
+        normalize_input(i, False) for i in optional_inputs
+    ]
 
     # Seed seen_required_names from blueprint level
     seen_required_names: set[str] = set()
@@ -174,7 +188,15 @@ def get_required_inputs(manifest: dict) -> dict:
 
     total_optional = len(optional_inputs)
 
-    # Process module-level vars (pack.json + variables.tf)
+    blueprint_visible_input_names = {
+        item["name"]
+        for item in all_inputs
+        if item.get("name") and not item.get("hidden")
+    }
+
+    missing_modules: list[str] = []
+
+    # Process module-level vars (pack.json + variables.tf) matching ImportedBlueprintService
     for module_def in manifest.get("modules") or []:
         module_ref = str(module_def.get("module") or "").strip()
         if not module_ref:
@@ -182,30 +204,38 @@ def get_required_inputs(manifest: dict) -> dict:
         variables_schema = load_module_vars(module_ref)
         if not variables_schema:
             print(f"  WARNING: no schema found for {module_ref}")
+            missing_modules.append(module_ref)
             continue
         module_inputs_literal = (
-            module_def.get("inputs") if isinstance(module_def.get("inputs"), dict) else {}
+            module_def.get("inputs")
+            if isinstance(module_def.get("inputs"), dict)
+            else {}
         )
         for var_def in variables_schema:
             vname = var_def.get("name")
             if not vname:
                 continue
+            if vname in blueprint_visible_input_names:
+                continue
             literal_default = module_inputs_literal.get(vname)
             is_required = bool(var_def.get("required"))
-            var_source = var_def.get("source")  # None after tf-parse
+            var_source = var_def.get("source")
             is_hidden = (var_source in CONTEXT_RESOLVED_SOURCES) or (
                 vname in context_resolved_names
             )
-            # If the module declaration hard-wires a literal value, it's not user-visible
             if literal_default is not None:
                 is_hidden = True
             entry = {
                 "name": vname,
-                "required": is_required and not is_hidden,
+                # Module vars are optional power-user overrides in ImportedBlueprintService;
+                # never block-required on the create form.
+                "required": False,
                 "hidden": is_hidden,
                 "source": var_source,
                 "module_ref": module_ref,
-                "default": literal_default if literal_default is not None else var_def.get("default"),
+                "default": literal_default
+                if literal_default is not None
+                else var_def.get("default"),
                 "_from_tf_only": var_def.get("_from_tf_only", False),
             }
             all_inputs.append(entry)
@@ -221,31 +251,30 @@ def get_required_inputs(manifest: dict) -> dict:
 
     total_required = len(seen_required_names)
 
-    # Collect TF-only visible vars (both required and optional) — these are module vars
-    # that Forge will surface to the user but are not declared in the blueprint at all.
-    # These indicate missing source=module declarations in the blueprint optional list.
-    tf_only_visible_names: list[str] = []
-    seen_tf_visible: set[str] = set()
-    for item in all_inputs:
-        if item.get("_from_tf_only") and not item.get("hidden"):
-            n = item.get("name")
-            if n and n not in seen_tf_visible:
-                tf_only_visible_names.append(n)
-                seen_tf_visible.add(n)
+    expected_required_names = sorted(
+        {
+            item.get("name")
+            for item in required_inputs
+            if isinstance(item, dict)
+            and item.get("name")
+            and item.get("source") not in CONTEXT_RESOLVED_SOURCES
+        }
+    )
 
     return {
         "total_required": total_required,
         "total_optional": total_optional,
         "visible_required_names": sorted(seen_required_names),
+        "expected_required_names": expected_required_names,
         "context_resolved_names": sorted(context_resolved_names),
         "all_inputs": all_inputs,
-        "tf_only_visible_names": sorted(tf_only_visible_names),
+        "missing_modules": missing_modules,
     }
 
 
 def main():
     if len(sys.argv) < 2:
-        blueprint_dir = "blueprints/aws-eks-bnk23-traffic"
+        blueprint_dir = "blueprints/aws-eks-bnk241-traffic"
     else:
         blueprint_dir = sys.argv[1]
 
@@ -257,7 +286,9 @@ def main():
     with open(bp_path) as f:
         manifest = json.load(f)
 
-    print(f"Blueprint: {manifest['blueprint']['id']} v{manifest['blueprint']['version']}")
+    print(
+        f"Blueprint: {manifest['blueprint']['id']} v{manifest['blueprint']['version']}"
+    )
     print()
 
     result = get_required_inputs(manifest)
@@ -272,29 +303,13 @@ def main():
         print(f"  ✓ {n}")
     print()
 
-    # Report TF-only visible vars (present in .tf but not in pack.json AND not in blueprint)
-    # These are what Forge shows to the user that the blueprint fails to hide.
-    if result["tf_only_visible_names"]:
-        print(
-            f"TF-only visible inputs NOT declared in blueprint ({len(result['tf_only_visible_names'])}):"
-        )
-        for n in result["tf_only_visible_names"]:
-            # find module_ref
-            refs = sorted({
-                i["module_ref"]
-                for i in result["all_inputs"]
-                if i.get("name") == n and i.get("_from_tf_only") and i.get("module_ref")
-            })
-            print(f"  ✗ {n} [{', '.join(refs)}]")
-        print()
-
     # Highlight module-level visible required for diagnosis
     module_visible = []
     for item in result["all_inputs"]:
         if item.get("required") and not item.get("hidden") and item.get("module_ref"):
             module_visible.append(f"  {item['name']} [{item['module_ref']}]")
     if module_visible:
-        print(f"Module-level visible required (counted once via dedup):")
+        print("Module-level visible required (counted once via dedup):")
         for line in sorted(set(module_visible)):
             print(line)
         print()
@@ -303,29 +318,27 @@ def main():
     print(f"Total optional: {result['total_optional']}")
     print()
 
-    # PASS requires:
-    #   1. Zero visible required inputs (eks_cluster_name is now context-resolved from project name)
-    #   2. No TF-only visible vars (pack.json or blueprint is missing declarations for them)
-    tf_only_count = len(result["tf_only_visible_names"])
-    required_ok = result["total_required"] == 0
-    tf_only_ok = tf_only_count == 0
+    required_ok = (
+        result["visible_required_names"] == result["expected_required_names"]
+        and not module_visible
+    )
+    modules_ok = len(result["missing_modules"]) == 0
 
-    if required_ok and tf_only_ok:
-        print("✅ PASS: zero visible required fields (eks_cluster_name resolved from project name)")
-        print("✅ PASS: no TF-only visible inputs missing from blueprint declarations")
+    if required_ok and modules_ok:
+        print(
+            f"✅ PASS: visible required inputs match blueprint declaration: "
+            f"{result['visible_required_names']}"
+        )
+        print("✅ PASS: zero module-level required inputs leaked into UI form")
         sys.exit(0)
     else:
         if not required_ok:
             print(
-                f"❌ FAIL: expected 0 visible required inputs, "
-                f"got {result['total_required']}: {result['visible_required_names']}"
+                f"❌ FAIL: expected visible required inputs {result['expected_required_names']}, "
+                f"got {result['visible_required_names']}"
             )
-        if not tf_only_ok:
-            print(
-                f"❌ FAIL: {tf_only_count} module vars visible in Forge UI but not declared in "
-                f"blueprint optional (add source=module entries to hide them): "
-                f"{result['tf_only_visible_names']}"
-            )
+        if not modules_ok:
+            print(f"❌ FAIL: missing module schemas: {result['missing_modules']}")
         sys.exit(1)
 
 

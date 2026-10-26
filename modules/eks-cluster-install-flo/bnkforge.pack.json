@@ -3,7 +3,7 @@
   "module": {
     "name": "EKS Cluster Install FLO",
     "path": "modules/eks-cluster-install-flo",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "category": "bnk",
     "description": "Install F5 Lifecycle Operator (FLO) on AWS EKS — Helm release with BNK licensing and cert-manager ClusterIssuer wiring. AWS-tuned default for container_platform.",
     "provider": "aws",
@@ -61,7 +61,8 @@
         "description": "FLO Helm chart version. Auto-wired from the BNK manifest parsed by bnk-prereqs.",
         "source": "module",
         "from_module": "modules/eks-cluster-install-bnk-prereqs",
-        "from_output": "flo_version"
+        "from_output": "flo_version",
+        "default": "v2.30.1-0.0.8"
       },
       {
         "name": "far_secret_name",

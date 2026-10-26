@@ -2,7 +2,7 @@
   "module": {
     "name": "EKS Cluster Install FLO",
     "path": "modules/eks-cluster-install-flo",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "layer": "application",
     "category": "bnk",
     "description": "Install F5 Lifecycle Operator (FLO) on AWS EKS via Helm. FLO manages the BNK control plane: CWC, DSSM, Observer, OTEL, RabbitMQ, and TMM (via CNEInstance). Includes CPCL key download and license activation. AWS-tuned default for container_platform.",
@@ -11,7 +11,7 @@
   },
   "source": {
     "kind": "official",
-    "channel": "release/2.2"
+    "channel": "release/2.4.1"
   },
   "execution": {
     "engine": "kubernetes",
@@ -50,7 +50,8 @@
         "description": "FLO Helm chart version",
         "source": "module",
         "from_module": "modules/eks-cluster-install-bnk-prereqs",
-        "from_output": "flo_version"
+        "from_output": "flo_version",
+        "default": "v2.30.1-0.0.8"
       },
       {
         "name": "far_secret_name",

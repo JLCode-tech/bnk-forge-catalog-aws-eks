@@ -302,6 +302,72 @@ MANIFEST
 }
 
 # =============================================================================
+# 1b. f5-cne-controller EndpointSlices RBAC (BNK 2.4.1+ requirement)
+# =============================================================================
+# BNK 2.4.1 f5-cne-controller invokes single-resource GET on discovery.k8s.io/v1
+# endpointslices (endpointSliceLister.Get(svcName)), while the chart ClusterRole
+# only grants list and watch. Grant get/list/watch on endpointslices to
+# ServiceAccount f5-cne-controller in var.instance_namespace so GatewayClass and
+# Gateway reconcile cleanly.
+
+resource "null_resource" "cne_controller_endpointslices_rbac" {
+  triggers = {
+    kubeconfig_file = local_sensitive_file.kubeconfig.filename
+    namespace       = var.instance_namespace
+    sa_name         = var.cne_controller_sa_name
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo "=== Applying f5-cne-controller-endpointslices-get ClusterRole + ClusterRoleBinding ==="
+      cat <<'MANIFEST' | ${local.kubectl} apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: f5-cne-controller-endpointslices-get
+  labels:
+    app.kubernetes.io/managed-by: bnk-forge
+    app.kubernetes.io/component: cne-controller-rbac
+rules:
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: f5-cne-controller-endpointslices-get
+  labels:
+    app.kubernetes.io/managed-by: bnk-forge
+    app.kubernetes.io/component: cne-controller-rbac
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: f5-cne-controller-endpointslices-get
+subjects:
+  - kind: ServiceAccount
+    name: f5-cne-controller
+    namespace: ${var.instance_namespace}
+%{if var.cne_controller_sa_name != "f5-cne-controller"~}
+  - kind: ServiceAccount
+    name: ${var.cne_controller_sa_name}
+    namespace: ${var.instance_namespace}
+%{endif~}
+MANIFEST
+    EOT
+  }
+
+  provisioner "local-exec" {
+    when       = destroy
+    on_failure = continue
+    command    = <<-EOT
+      kubectl --kubeconfig ${self.triggers.kubeconfig_file} delete clusterrolebinding f5-cne-controller-endpointslices-get --ignore-not-found
+      kubectl --kubeconfig ${self.triggers.kubeconfig_file} delete clusterrole f5-cne-controller-endpointslices-get --ignore-not-found
+    EOT
+  }
+}
+
+# =============================================================================
 # 2. CNEInstance CR — FLO observes this and deploys the BNK runtime
 # =============================================================================
 
@@ -317,6 +383,7 @@ resource "null_resource" "cneinstance" {
 
   depends_on = [
     null_resource.cloud_network_mapping,
+    null_resource.cne_controller_endpointslices_rbac,
   ]
 
   provisioner "local-exec" {
@@ -433,7 +500,10 @@ resource "aws_iam_role" "cne_controller" {
         Condition = {
           StringEquals = {
             "${local.oidc_host_path}:aud" = "sts.amazonaws.com"
-            "${local.oidc_host_path}:sub" = "system:serviceaccount:${var.instance_namespace}:${var.cne_controller_sa_name}"
+            "${local.oidc_host_path}:sub" = distinct([
+              "system:serviceaccount:${var.instance_namespace}:f5-cne-controller",
+              "system:serviceaccount:${var.instance_namespace}:${var.cne_controller_sa_name}",
+            ])
           }
         }
       }
@@ -486,29 +556,36 @@ resource "null_resource" "annotate_and_restart" {
       ROLE_ARN="${aws_iam_role.cne_controller.arn}"
       DEPLOY="${var.cne_controller_deployment_name}"
       TIMEOUT=${var.wait_for_sa_timeout_seconds}
+      FOUND_SA=""
 
-      echo "=== Waiting for ServiceAccount $NS/$SA (max $${TIMEOUT}s) ==="
+      echo "=== Waiting for ServiceAccount $NS/$SA or $NS/f5-cne-controller (max $${TIMEOUT}s) ==="
       ELAPSED=0
       INTERVAL=5
       while [ $ELAPSED -lt $TIMEOUT ]; do
+        if $KUBECTL -n "$NS" get sa "f5-cne-controller" >/dev/null 2>&1; then
+          FOUND_SA="f5-cne-controller"
+          echo "ServiceAccount $FOUND_SA found after $${ELAPSED}s"
+          break
+        fi
         if $KUBECTL -n "$NS" get sa "$SA" >/dev/null 2>&1; then
-          echo "ServiceAccount found after $${ELAPSED}s"
+          FOUND_SA="$SA"
+          echo "ServiceAccount $FOUND_SA found after $${ELAPSED}s"
           break
         fi
         sleep $INTERVAL
         ELAPSED=$((ELAPSED + INTERVAL))
       done
 
-      if ! $KUBECTL -n "$NS" get sa "$SA" >/dev/null 2>&1; then
-        echo "ERROR: ServiceAccount $NS/$SA never appeared after $${TIMEOUT}s"
+      if [ -z "$FOUND_SA" ]; then
+        echo "ERROR: ServiceAccount $NS/$SA (or f5-cne-controller) never appeared after $${TIMEOUT}s"
         echo "Is the CNEInstance reconciling? Check:"
         echo "  $KUBECTL -n $NS get cneinstance"
         echo "  $KUBECTL -n $NS get pods"
         exit 1
       fi
 
-      echo "=== Annotating $NS/$SA with eks.amazonaws.com/role-arn=$ROLE_ARN ==="
-      $KUBECTL -n "$NS" annotate sa "$SA" \
+      echo "=== Annotating $NS/$FOUND_SA with eks.amazonaws.com/role-arn=$ROLE_ARN ==="
+      $KUBECTL -n "$NS" annotate sa "$FOUND_SA" \
         "eks.amazonaws.com/role-arn=$ROLE_ARN" \
         --overwrite
 
@@ -532,6 +609,10 @@ resource "null_resource" "annotate_and_restart" {
       kubectl --kubeconfig ${self.triggers.kubeconfig_file} \
         -n ${split("/", self.triggers.sa)[0]} \
         annotate sa ${split("/", self.triggers.sa)[1]} \
+        eks.amazonaws.com/role-arn- 2>/dev/null || true
+      kubectl --kubeconfig ${self.triggers.kubeconfig_file} \
+        -n ${split("/", self.triggers.sa)[0]} \
+        annotate sa f5-cne-controller \
         eks.amazonaws.com/role-arn- 2>/dev/null || true
     EOT
   }

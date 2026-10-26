@@ -2,17 +2,15 @@
   "schema_version": 1,
   "blueprint": {
     "id": "aws-eks-existing-cluster-with-hp-nodes",
-    "version": "0.4.2",
-    "name": "Existing EKS + HP + BNK 2.3",
-    "description": "Adopt an existing AWS EKS cluster, add a dedicated HP TMM node pool (dual secondary ENIs), and install the BNK 2.3 platform."
+    "version": "0.5.0",
+    "name": "Existing EKS + HP + BNK 2.4.1",
+    "description": "Adopt an existing AWS EKS cluster, add a dedicated HP TMM node pool (dual secondary ENIs), and install the BNK 2.4.1 platform."
   },
-  "bnk_version": "2.3",
+  "bnk_version": "2.4.1",
   "category": "bnk",
   "cloud_provider": "aws",
   "compatibility": {
-    "supported_platform_profiles": [
-      "aws_eks"
-    ],
+    "supported_platform_profiles": ["aws_eks"],
     "required_capabilities": []
   },
   "icon": "Server",
@@ -21,14 +19,7 @@
   "estimated_cost": "AWS usage-based (adds ~3\u00d7 m5n.large)",
   "difficulty": "advanced",
   "maturity": "alpha",
-  "tags": [
-    "aws",
-    "eks",
-    "kubernetes",
-    "bnk",
-    "hp-nodes",
-    "tmm"
-  ],
+  "tags": ["aws", "eks", "kubernetes", "bnk", "bnk-2.4.1", "hp-nodes", "tmm"],
   "prerequisites": [
     {
       "type": "kubernetes_cluster",
@@ -162,9 +153,7 @@
       "name": "HP TMM Node Pool",
       "module": "modules/eks-cluster-hp-nodes",
       "version": "0.5.0-alpha",
-      "depends_on": [
-        "cluster-register"
-      ],
+      "depends_on": ["cluster-register"],
       "inputs": {
         "aws_access_key_id": "${aws_access_key_id}",
         "aws_secret_access_key": "${aws_secret_access_key}",
@@ -179,9 +168,7 @@
       "name": "Install Multus CNI",
       "module": "modules/eks-cluster-install-multus",
       "version": "0.2.0-alpha",
-      "depends_on": [
-        "hp-nodes"
-      ],
+      "depends_on": ["hp-nodes"],
       "inputs": {}
     },
     {
@@ -189,10 +176,7 @@
       "name": "TMM NADs (ens7/ens8)",
       "module": "modules/eks-cluster-install-tmm-nads",
       "version": "1.0.0-alpha",
-      "depends_on": [
-        "hp-nodes",
-        "install-multus"
-      ],
+      "depends_on": ["hp-nodes", "install-multus"],
       "inputs": {
         "aws_access_key_id": "${aws_access_key_id}",
         "aws_secret_access_key": "${aws_secret_access_key}",
@@ -204,7 +188,7 @@
       "id": "bnk-prereqs",
       "name": "BNK Prerequisites",
       "module": "modules/eks-cluster-install-bnk-prereqs",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "depends_on": [
         "cluster-register",
         "hp-nodes",
@@ -219,10 +203,8 @@
       "id": "cert-manager",
       "name": "Cert-Manager",
       "module": "modules/eks-cluster-install-cert-manager",
-      "version": "3.1.0",
-      "depends_on": [
-        "bnk-prereqs"
-      ],
+      "version": "3.2.0",
+      "depends_on": ["bnk-prereqs"],
       "inputs": {
         "cluster_name": "${eks_cluster_name}"
       }
@@ -232,19 +214,15 @@
       "name": "BNK Cert Issuer",
       "module": "modules/eks-cluster-install-cert-issuer",
       "version": "1.0.0",
-      "depends_on": [
-        "cert-manager"
-      ],
+      "depends_on": ["cert-manager"],
       "inputs": {}
     },
     {
       "id": "flo",
       "name": "F5 Lifecycle Operator",
       "module": "modules/eks-cluster-install-flo",
-      "version": "2.0.0",
-      "depends_on": [
-        "cert-issuer"
-      ],
+      "version": "2.1.0",
+      "depends_on": ["cert-issuer"],
       "inputs": {
         "cluster_name": "${eks_cluster_name}"
       }
@@ -253,11 +231,8 @@
       "id": "cneinstall",
       "name": "CNEInstance + IRSA",
       "module": "modules/eks-cluster-cneinstall",
-      "version": "1.2.0",
-      "depends_on": [
-        "flo",
-        "tmm-nads"
-      ],
+      "version": "1.3.0",
+      "depends_on": ["flo", "tmm-nads"],
       "inputs": {
         "aws_access_key_id": "${aws_access_key_id}",
         "aws_secret_access_key": "${aws_secret_access_key}",
@@ -266,10 +241,7 @@
         "deployment_size": "${deployment_size}",
         "tmm_replicas": "${tmm_replicas}",
         "vip_cidr": "${vip_cidr}",
-        "network_attachments": [
-          "ens7-ipvlan-l2",
-          "ens8-ipvlan-l2"
-        ],
+        "network_attachments": ["ens7-ipvlan-l2", "ens8-ipvlan-l2"],
         "jwt_token": "${jwt_token}"
       }
     }

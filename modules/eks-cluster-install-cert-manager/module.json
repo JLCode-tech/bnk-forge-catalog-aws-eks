@@ -2,26 +2,20 @@
   "module": {
     "name": "Cert-Manager (Jetstack)",
     "path": "modules/eks-cluster-install-cert-manager",
-    "version": "3.1.0",
+    "version": "3.2.0",
     "layer": "kubernetes",
     "category": "security",
-    "description": "Deploys Jetstack cert-manager v1.16.1 with self-signed ClusterIssuer and OTEL telemetry certs for BNK. Uses kubectl apply for CRD resources to avoid plan-time dependency on CRDs. CRDs are cleaned up on destroy to prevent stale webhook bootstrap deadlocks.",
+    "description": "Deploys Jetstack cert-manager v1.16.2 with self-signed ClusterIssuer and OTEL telemetry certs for BNK. Uses kubectl apply for CRD resources to avoid plan-time dependency on CRDs. CRDs are cleaned up on destroy to prevent stale webhook bootstrap deadlocks.",
     "cloud_specific": false,
-    "supported_platforms": [
-      "any"
-    ]
+    "supported_platforms": ["any"]
   },
   "source": {
     "kind": "official",
-    "channel": "release/2.2"
+    "channel": "release/2.4.1"
   },
   "execution": {
     "engine": "opentofu",
-    "deploy_models": [
-      "terraform",
-      "helm",
-      "kubernetes_manifest"
-    ]
+    "deploy_models": ["terraform", "helm", "kubernetes_manifest"]
   },
   "contract": {
     "metadata_version": "module-metadata/v2alpha1"
@@ -55,8 +49,8 @@
       {
         "name": "cert_manager_version",
         "type": "string",
-        "description": "Jetstack cert-manager version (F5 tested v1.16.1)",
-        "default": "v1.16.1",
+        "description": "Jetstack cert-manager version (F5 tested v1.16.2)",
+        "default": "v1.16.2",
         "source": "user"
       },
       {
@@ -104,28 +98,21 @@
         "name": "cert_manager_ready",
         "type": "boolean",
         "description": "Flag indicating cert-manager is ready",
-        "used_by": [
-          "bnk/flo"
-        ],
+        "used_by": ["bnk/flo"],
         "sensitive": false
       },
       {
         "name": "cluster_issuer_name",
         "type": "string",
         "description": "Name of the ClusterIssuer",
-        "used_by": [
-          "bnk/flo",
-          "bnk/cneinstance"
-        ],
+        "used_by": ["bnk/flo", "bnk/cneinstance"],
         "sensitive": false
       },
       {
         "name": "bnk_certs_ready",
         "type": "boolean",
         "description": "Flag indicating OTEL certs have been issued (CWC certs auto-managed by FLO)",
-        "used_by": [
-          "bnk/flo"
-        ],
+        "used_by": ["bnk/flo"],
         "sensitive": false
       },
       {
@@ -138,15 +125,8 @@
     ]
   },
   "providers": {
-    "required": [
-      "kubernetes",
-      "helm",
-      "aws"
-    ],
-    "optional": [
-      "null",
-      "local"
-    ]
+    "required": ["kubernetes", "helm", "aws"],
+    "optional": ["null", "local"]
   },
   "deployment": {
     "order": 35,

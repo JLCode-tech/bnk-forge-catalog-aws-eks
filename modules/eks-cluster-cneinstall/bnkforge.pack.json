@@ -3,7 +3,7 @@
   "module": {
     "name": "EKS Cluster CNEInstall",
     "path": "modules/eks-cluster-cneinstall",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "category": "bnk",
     "description": "Apply the CNEInstance CR on AWS EKS, lay down the cloud-network-mapping ConfigMap and (optionally) the BNKGateway CR (kind: F5BnkGateway) for VIP allocation, and wire AWS IRSA for the CNE controller (IAM role + OIDC trust + SA annotation + rollout-restart).",
     "provider": "aws",
@@ -131,7 +131,8 @@
         "description": "BNK manifest version (referenced in the CNEInstance CR).",
         "source": "module",
         "from_module": "modules/eks-cluster-install-bnk-prereqs",
-        "from_output": "manifest_version"
+        "from_output": "manifest_version",
+        "default": "2.4.1-3.2850.1-0.0.9"
       }
     ],
     "optional": [
