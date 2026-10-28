@@ -40,6 +40,22 @@ locals {
   # materialise our own from Forge-injected content.
   kubeconfig_path = var.kubeconfig_file != "" ? var.kubeconfig_file : one(local_sensitive_file.kubeconfig[*].filename)
 
+  effective_teem_cert_url = (
+    var.operation_mode == "connected" && var.teem_cert_url == "https://product.apis.f5.com/ee/v1"
+    ? ""
+    : var.teem_cert_url
+  )
+  effective_teem_entitlement_url = (
+    var.operation_mode == "connected" && var.teem_entitlement_url == "https://product-s.apis.f5.com/ee/v1"
+    ? ""
+    : var.teem_entitlement_url
+  )
+  effective_teem_initial_config_url = (
+    var.operation_mode == "connected" && var.teem_initial_config_url == "https://product-s.apis.f5.com/ee/v1"
+    ? ""
+    : var.teem_initial_config_url
+  )
+
   # Render the License CR with a placeholder where the JWT goes. The real JWT
   # is NOT interpolated here — keeping it out of this string keeps it out of
   # Terraform plan/state. wait-license-active.sh substitutes __JWT__ from the
@@ -49,9 +65,9 @@ locals {
     license_namespace       = var.license_namespace
     operation_mode          = var.operation_mode
     jwt_placeholder         = "__JWT__"
-    teem_cert_url           = var.teem_cert_url
-    teem_entitlement_url    = var.teem_entitlement_url
-    teem_initial_config_url = var.teem_initial_config_url
+    teem_cert_url           = local.effective_teem_cert_url
+    teem_entitlement_url    = local.effective_teem_entitlement_url
+    teem_initial_config_url = local.effective_teem_initial_config_url
   })
 }
 

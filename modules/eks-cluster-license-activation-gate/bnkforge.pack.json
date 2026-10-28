@@ -82,23 +82,23 @@
       {
         "name": "teem_cert_url",
         "type": "string",
-        "description": "TEEM cert URL (spec.teemCertUrl).",
+        "description": "Optional custom TEEM cert URL override (spec.teemCertUrl). Empty = auto-detected by CWC from JWT JKU.",
         "source": "user",
-        "default": "https://product.apis.f5.com/ee/v1"
+        "default": ""
       },
       {
         "name": "teem_entitlement_url",
         "type": "string",
-        "description": "TEEM entitlement URL (spec.teemEntitlementUrl).",
+        "description": "Optional custom TEEM entitlement URL override (spec.teemEntitlementUrl). Empty = auto-detected by CWC from JWT JKU.",
         "source": "user",
-        "default": "https://product-s.apis.f5.com/ee/v1"
+        "default": ""
       },
       {
         "name": "teem_initial_config_url",
         "type": "string",
-        "description": "TEEM initial-config URL (spec.teemInitialConfigUrl).",
+        "description": "Optional custom TEEM initial-config URL override (spec.teemInitialConfigUrl). Empty = auto-detected by CWC from JWT JKU.",
         "source": "user",
-        "default": "https://product-s.apis.f5.com/ee/v1"
+        "default": ""
       },
       {
         "name": "activation_timeout_seconds",
