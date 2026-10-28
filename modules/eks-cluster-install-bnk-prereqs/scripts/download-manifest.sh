@@ -7,6 +7,18 @@ set -euo pipefail
 # Read inputs from Terraform
 eval "$(jq -r '@sh "MANIFEST_VERSION=\(.manifest_version) WORK_DIR=\(.work_dir) CHART_NAME=\(.chart_name) SERVICE_ACCOUNT_KEY_FILE=\(.service_account_key_file // empty)"')"
 
+# Resolve SERVICE_ACCOUNT_KEY_FILE to absolute path before cd
+if [ -n "${SERVICE_ACCOUNT_KEY_FILE:-}" ]; then
+    mkdir -p "$(dirname "$SERVICE_ACCOUNT_KEY_FILE")"
+    if [ ! -f "$SERVICE_ACCOUNT_KEY_FILE" ] && [ -f "terraform.tfvars.json" ]; then
+        jq -r '.cne_pull_secret // empty' terraform.tfvars.json > "$SERVICE_ACCOUNT_KEY_FILE"
+        chmod 600 "$SERVICE_ACCOUNT_KEY_FILE"
+    fi
+    if [ -f "$SERVICE_ACCOUNT_KEY_FILE" ]; then
+        SERVICE_ACCOUNT_KEY_FILE="$(cd "$(dirname "$SERVICE_ACCOUNT_KEY_FILE")" && pwd)/$(basename "$SERVICE_ACCOUNT_KEY_FILE")"
+    fi
+fi
+
 # Create work directory
 mkdir -p "$WORK_DIR"
 cd "$WORK_DIR"
@@ -94,7 +106,9 @@ log "Manifest downloaded successfully: $MANIFEST_TAR"
 
 # Extract manifest if not already extracted
 # Dynamically detect the extracted directory from tar contents
-MANIFEST_DIR=$(tar -tf "$MANIFEST_TAR" | head -n1 | cut -d'/' -f1)
+FIRST_TAR_ENTRY=""
+IFS= read -r FIRST_TAR_ENTRY < <(tar -tf "$MANIFEST_TAR")
+MANIFEST_DIR="${FIRST_TAR_ENTRY%%/*}"
 if [ -z "$MANIFEST_DIR" ]; then
     error_exit "Could not determine directory name from tar file"
 fi
