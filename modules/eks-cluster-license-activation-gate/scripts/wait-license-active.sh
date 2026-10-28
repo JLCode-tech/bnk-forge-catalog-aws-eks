@@ -89,6 +89,13 @@ wait_for_crd() {
 # explicit and never echo the token or the rendered file.
 apply_license() {
   set +x
+  if [ "$(current_state)" = "RegistrationFailed" ]; then
+    log "existing License ${LICENSE_NAMESPACE}/${LICENSE_NAME} is in RegistrationFailed state — resetting stale License CR, CPCL secrets, and f5-spk-cwc pod before re-applying"
+    $KUBECTL -n "$LICENSE_NAMESPACE" delete license "$LICENSE_NAME" --ignore-not-found >/dev/null 2>&1 || true
+    $KUBECTL -n "$LICENSE_NAMESPACE" delete secret cpcl-config-secret cpcl-key-secret licensestatus initialregistrationstatus modeofoperation registrationstatus certstatus entitlementstatus --ignore-not-found >/dev/null 2>&1 || true
+    $KUBECTL -n "$LICENSE_NAMESPACE" rollout restart deployment/f5-spk-cwc >/dev/null 2>&1 || true
+    $KUBECTL -n "$LICENSE_NAMESPACE" rollout status deployment/f5-spk-cwc --timeout=120s >/dev/null 2>&1 || true
+  fi
   MANIFEST_FILE="$(mktemp)"
   chmod 0600 "$MANIFEST_FILE"
   # Substitute the placeholder with the raw JWT. Use bash string replacement so

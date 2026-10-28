@@ -10,6 +10,13 @@ metadata:
 spec:
   operationMode: ${operation_mode}
   jwt: ${jwt_placeholder}
+%{ if teem_cert_url != "" ~}
   teemCertUrl: ${teem_cert_url}
+%{ endif ~}
+%{ if teem_entitlement_url != "" ~}
   teemEntitlementUrl: ${teem_entitlement_url}
+%{ endif ~}
+%{ if teem_initial_config_url != "" ~}
   teemInitialConfigUrl: ${teem_initial_config_url}
+%{ endif ~}
+
