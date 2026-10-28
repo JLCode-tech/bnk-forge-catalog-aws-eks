@@ -3,12 +3,22 @@
   "module": {
     "name": "aws_eks_cluster_install_tmm_nads",
     "path": "modules/eks-cluster-install-tmm-nads",
-    "version": "0.3.0-alpha",
+    "version": "0.3.1-alpha",
     "category": "bnk",
     "description": "Creates the two AWS-specific NetworkAttachmentDefinitions (ens7-ipvlan-l2 external, ens8-ipvlan-l2 internal) TMM uses on its data-plane secondary ENIs. Discovers the matching f5-bnk-role-tagged subnets at apply time to derive each NAD's static IPAM placeholder. Depends on eks-cluster-install-multus (cloud-agnostic, vendored from bnk-forge-catalog-shared) for the actual Multus CNI install. Runs between eks-cluster-install-multus and eks-cluster-cneinstall in the -with-hp-nodes variant blueprints.",
     "provider": "aws",
-    "supported_platforms": ["aws_eks"],
-    "tags": ["aws", "eks", "kubernetes", "multus", "cni", "network-attachment-definition", "tmm"],
+    "supported_platforms": [
+      "aws_eks"
+    ],
+    "tags": [
+      "aws",
+      "eks",
+      "kubernetes",
+      "multus",
+      "cni",
+      "network-attachment-definition",
+      "tmm"
+    ],
     "maturity": "alpha"
   },
   "deployment_pack": {
@@ -35,36 +45,22 @@
       },
       {
         "module": "modules/eks-cluster-install-multus",
-        "reason": "Must run first — Multus must be installed and the NetworkAttachmentDefinition CRD Established before this module applies NAD CRs. multus_ready gate auto-wires from this module's output."
+        "reason": "Must run first \u2014 Multus must be installed and the NetworkAttachmentDefinition CRD Established before this module applies NAD CRs. multus_ready gate auto-wires from this module's output."
       }
     ],
     "optional": [
       {
         "module": "modules/eks-cluster-create",
-        "reason": "Alternative upstream — emits the same kubeconfig + vpc_id outputs."
+        "reason": "Alternative upstream \u2014 emits the same kubeconfig + vpc_id outputs."
       },
       {
         "module": "modules/eks-cluster-hp-nodes",
-        "reason": "Logical predecessor — HP-nodes attaches the ens7/ens8 secondary ENIs that these NADs bind to AND creates the tagged TMM subnets this module discovers. Wire as depends_on in the blueprint."
+        "reason": "Logical predecessor \u2014 HP-nodes attaches the ens7/ens8 secondary ENIs that these NADs bind to AND creates the tagged TMM subnets this module discovers. Wire as depends_on in the blueprint."
       }
     ]
   },
   "inputs": {
     "required": [
-      {
-        "name": "aws_access_key_id",
-        "type": "string",
-        "description": "AWS access key ID. Resolved by Forge's credential template at deploy time (any auth method).",
-        "source": "user",
-        "sensitive": true
-      },
-      {
-        "name": "aws_secret_access_key",
-        "type": "string",
-        "description": "AWS secret access key.",
-        "source": "user",
-        "sensitive": true
-      },
       {
         "name": "aws_region",
         "type": "string",
@@ -90,10 +86,26 @@
     ],
     "optional": [
       {
+        "name": "aws_access_key_id",
+        "type": "string",
+        "description": "AWS access key ID. Resolved by Forge's credential template at deploy time (any auth method).",
+        "source": "credential_template",
+        "sensitive": true,
+        "default": ""
+      },
+      {
+        "name": "aws_secret_access_key",
+        "type": "string",
+        "description": "AWS secret access key.",
+        "source": "credential_template",
+        "sensitive": true,
+        "default": ""
+      },
+      {
         "name": "aws_session_token",
         "type": "string",
         "description": "AWS session token. Populated for STS / SSO / assumed-role; empty for static keys.",
-        "source": "user",
+        "source": "credential_template",
         "sensitive": true,
         "default": ""
       },
@@ -209,7 +221,7 @@
       {
         "name": "nads_applied",
         "type": "boolean",
-        "description": "Gate output — true once both NADs are applied. cneinstall depends on this before rendering the CNEInstance CR."
+        "description": "Gate output \u2014 true once both NADs are applied. cneinstall depends on this before rendering the CNEInstance CR."
       }
     ]
   },

@@ -2,12 +2,14 @@
   "module": {
     "name": "EKS Cluster Install TMM NADs",
     "path": "modules/eks-cluster-install-tmm-nads",
-    "version": "0.3.0-alpha",
+    "version": "0.3.1-alpha",
     "layer": "application",
     "category": "bnk",
-    "description": "Creates the two AWS-specific NetworkAttachmentDefinitions (ens7-ipvlan-l2 external, ens8-ipvlan-l2 internal) TMM uses on its data-plane secondary ENIs, with apply-time tag discovery to derive each NAD's static IPAM placeholder. Multus CNI install itself is handled by the cloud-agnostic eks-cluster-install-multus module (vendored from bnk-forge-catalog-shared) — this module depends on it via multus_ready.",
+    "description": "Creates the two AWS-specific NetworkAttachmentDefinitions (ens7-ipvlan-l2 external, ens8-ipvlan-l2 internal) TMM uses on its data-plane secondary ENIs, with apply-time tag discovery to derive each NAD's static IPAM placeholder. Multus CNI install itself is handled by the cloud-agnostic eks-cluster-install-multus module (vendored from bnk-forge-catalog-shared) \u2014 this module depends on it via multus_ready.",
     "cloud_specific": true,
-    "supported_platforms": ["aws_eks"]
+    "supported_platforms": [
+      "aws_eks"
+    ]
   },
   "source": {
     "kind": "official",
@@ -15,7 +17,9 @@
   },
   "execution": {
     "engine": "opentofu",
-    "deploy_models": ["kubernetes_manifest"]
+    "deploy_models": [
+      "kubernetes_manifest"
+    ]
   },
   "contract": {
     "metadata_version": "module-metadata/v2alpha1"
@@ -30,7 +34,7 @@
     "optional": [
       {
         "module": "modules/eks-cluster-hp-nodes",
-        "reason": "Logical predecessor — the NADs bind to the ens7/ens8 ENIs hp-nodes attaches AND hp-nodes creates the tagged TMM subnets this module discovers."
+        "reason": "Logical predecessor \u2014 the NADs bind to the ens7/ens8 ENIs hp-nodes attaches AND hp-nodes creates the tagged TMM subnets this module discovers."
       }
     ]
   },
@@ -75,27 +79,36 @@
         "name": "nads_applied",
         "type": "boolean",
         "description": "Gate output: both NADs applied.",
-        "used_by": ["modules/eks-cluster-cneinstall"],
+        "used_by": [
+          "modules/eks-cluster-cneinstall"
+        ],
         "sensitive": false
       },
       {
         "name": "nad_external_name",
         "type": "string",
         "description": "Final external NAD name (echoed back).",
-        "used_by": ["modules/eks-cluster-cneinstall"],
+        "used_by": [
+          "modules/eks-cluster-cneinstall"
+        ],
         "sensitive": false
       },
       {
         "name": "nad_internal_name",
         "type": "string",
         "description": "Final internal NAD name.",
-        "used_by": ["modules/eks-cluster-cneinstall"],
+        "used_by": [
+          "modules/eks-cluster-cneinstall"
+        ],
         "sensitive": false
       }
     ]
   },
   "providers": {
-    "required": ["local", "null"],
+    "required": [
+      "local",
+      "null"
+    ],
     "optional": []
   },
   "deployment": {

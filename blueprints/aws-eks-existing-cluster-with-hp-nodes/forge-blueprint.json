@@ -2,7 +2,7 @@
   "schema_version": 1,
   "blueprint": {
     "id": "aws-eks-existing-cluster-with-hp-nodes",
-    "version": "0.4.0",
+    "version": "0.4.1",
     "name": "Existing EKS + HP + BNK 2.2",
     "description": "Adopt an existing AWS EKS cluster, add a dedicated HP TMM node pool (dual secondary ENIs), and install the BNK 2.2 platform."
   },
@@ -18,7 +18,7 @@
   "icon": "Server",
   "color": "orange",
   "estimated_time": "25-40 minutes",
-  "estimated_cost": "AWS usage-based (adds ~3× m5n.large)",
+  "estimated_cost": "AWS usage-based (adds ~3\u00d7 m5n.large)",
   "difficulty": "advanced",
   "maturity": "alpha",
   "tags": [
@@ -53,13 +53,22 @@
   "inputs": {
     "required": [
       {
+        "name": "eks_cluster_name",
+        "type": "string",
+        "description": "Name of the existing EKS cluster.",
+        "order": 20
+      }
+    ],
+    "optional": [
+      {
         "name": "aws_access_key_id",
         "type": "string",
         "description": "Auto-filled from the AWS credential template.",
         "sensitive": true,
         "source": "credential_template",
         "source_field": "aws_access_key_id",
-        "order": 10
+        "order": 10,
+        "default": ""
       },
       {
         "name": "aws_secret_access_key",
@@ -68,7 +77,8 @@
         "sensitive": true,
         "source": "credential_template",
         "source_field": "aws_secret_access_key",
-        "order": 11
+        "order": 11,
+        "default": ""
       },
       {
         "name": "aws_region",
@@ -78,14 +88,6 @@
         "source_field": "region",
         "order": 12
       },
-      {
-        "name": "eks_cluster_name",
-        "type": "string",
-        "description": "Name of the existing EKS cluster.",
-        "order": 20
-      }
-    ],
-    "optional": [
       {
         "name": "aws_session_token",
         "type": "string",
@@ -120,7 +122,7 @@
       {
         "name": "tmm_replicas",
         "type": "number",
-        "description": "TMM replicas. 0 = auto-derive from AZ × HP node count.",
+        "description": "TMM replicas. 0 = auto-derive from AZ \u00d7 HP node count.",
         "default": 0,
         "order": 41
       },
@@ -138,7 +140,7 @@
       "id": "cluster-register",
       "name": "EKS Cluster Register",
       "module": "modules/eks-cluster-register",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "depends_on": [],
       "inputs": {
         "aws_access_key_id": "${aws_access_key_id}",
@@ -152,7 +154,7 @@
       "id": "hp-nodes",
       "name": "HP TMM Node Pool",
       "module": "modules/eks-cluster-hp-nodes",
-      "version": "0.3.0-alpha",
+      "version": "0.3.1-alpha",
       "depends_on": [
         "cluster-register"
       ],
@@ -179,7 +181,7 @@
       "id": "tmm-nads",
       "name": "TMM NADs (ens7/ens8)",
       "module": "modules/eks-cluster-install-tmm-nads",
-      "version": "0.3.0-alpha",
+      "version": "0.3.1-alpha",
       "depends_on": [
         "hp-nodes",
         "install-multus"
@@ -244,7 +246,7 @@
       "id": "cneinstall",
       "name": "CNEInstance + IRSA",
       "module": "modules/eks-cluster-cneinstall",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "depends_on": [
         "flo",
         "tmm-nads"

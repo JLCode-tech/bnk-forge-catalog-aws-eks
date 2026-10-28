@@ -2,12 +2,14 @@
   "module": {
     "name": "EKS Cluster CNEInstall",
     "path": "modules/eks-cluster-cneinstall",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "layer": "application",
     "category": "bnk",
     "description": "Apply the CNEInstance CR on AWS EKS plus the AWS-specific cloud-network-mapping ConfigMap and (optional) BNKGateway CR (kind: F5BnkGateway, IPAM), and wire AWS IRSA for the CNE controller (IAM role + OIDC trust + SA annotation + rollout-restart).",
     "cloud_specific": true,
-    "supported_platforms": ["aws_eks"]
+    "supported_platforms": [
+      "aws_eks"
+    ]
   },
   "source": {
     "kind": "official",
@@ -15,7 +17,10 @@
   },
   "execution": {
     "engine": "opentofu",
-    "deploy_models": ["terraform", "kubernetes_manifest"]
+    "deploy_models": [
+      "terraform",
+      "kubernetes_manifest"
+    ]
   },
   "contract": {
     "metadata_version": "module-metadata/v2alpha1"
@@ -43,20 +48,6 @@
   },
   "inputs": {
     "required": [
-      {
-        "name": "aws_access_key_id",
-        "type": "string",
-        "description": "AWS access key ID. Resolved from credential template (any auth method).",
-        "source": "user",
-        "sensitive": true
-      },
-      {
-        "name": "aws_secret_access_key",
-        "type": "string",
-        "description": "AWS secret access key. Resolved from credential template.",
-        "source": "user",
-        "sensitive": true
-      },
       {
         "name": "aws_region",
         "type": "string",
@@ -90,18 +81,34 @@
       {
         "name": "jwt_token",
         "type": "string",
-        "description": "F5 BNK JWT licensing token — bind to the same project secret the FLO module uses. Applied to the License CR (spec.jwt) by the license-activation-gate, which then gates on activation.",
+        "description": "F5 BNK JWT licensing token \u2014 bind to the same project secret the FLO module uses. Applied to the License CR (spec.jwt) by the license-activation-gate, which then gates on activation.",
         "source": "user",
         "sensitive": true
       }
     ],
     "optional": [
       {
+        "name": "aws_access_key_id",
+        "type": "string",
+        "description": "AWS access key ID. Resolved from credential template (any auth method).",
+        "source": "credential_template",
+        "sensitive": true,
+        "default": ""
+      },
+      {
+        "name": "aws_secret_access_key",
+        "type": "string",
+        "description": "AWS secret access key. Resolved from credential template.",
+        "source": "credential_template",
+        "sensitive": true,
+        "default": ""
+      },
+      {
         "name": "aws_session_token",
         "type": "string",
         "description": "AWS session token. Empty for static keys.",
         "default": "",
-        "source": "user",
+        "source": "credential_template",
         "sensitive": true
       },
       {
@@ -192,14 +199,18 @@
         "name": "watch_namespaces",
         "type": "list(string)",
         "description": "Namespaces the CNE controller watches.",
-        "default": ["All"],
+        "default": [
+          "All"
+        ],
         "source": "user"
       },
       {
         "name": "network_attachments",
         "type": "list(string)",
         "description": "NAD names attached to TMM.",
-        "default": ["ens7-ipvlan-l2"],
+        "default": [
+          "ens7-ipvlan-l2"
+        ],
         "source": "user"
       },
       {
@@ -212,7 +223,7 @@
       {
         "name": "cloud_az_subnet_mappings",
         "type": "list(object({name=string,subnets=list(object({cidr=string,subnet_id=string}))}))",
-        "description": "AWS AZ → subnet mapping. Auto-wired from eks-cluster-register — discovered via data.aws_subnet against the cluster's own VPC config.",
+        "description": "AWS AZ \u2192 subnet mapping. Auto-wired from eks-cluster-register \u2014 discovered via data.aws_subnet against the cluster's own VPC config.",
         "default": [],
         "source": "module",
         "from_module": "modules/eks-cluster-register",
@@ -256,7 +267,9 @@
         "name": "cneinstance_namespace",
         "type": "string",
         "description": "Namespace where the CNEInstance CR lives.",
-        "used_by": ["modules/eks-cluster-license"],
+        "used_by": [
+          "modules/eks-cluster-license"
+        ],
         "sensitive": false
       },
       {
@@ -269,27 +282,38 @@
       {
         "name": "cneinstance_ready",
         "type": "string",
-        "description": "Gate output — the readiness gate's null_resource id, produced only after the operator reported the CNEInstance functional. Not a literal true.",
-        "used_by": ["modules/eks-cluster-license-activation-gate"],
+        "description": "Gate output \u2014 the readiness gate's null_resource id, produced only after the operator reported the CNEInstance functional. Not a literal true.",
+        "used_by": [
+          "modules/eks-cluster-license-activation-gate"
+        ],
         "sensitive": false
       },
       {
         "name": "license_active",
         "type": "string",
-        "description": "Gate output — the license-activation-gate's null_resource id, produced only after the License CR was applied and the operator reported .status.state == Active. Not a literal true.",
+        "description": "Gate output \u2014 the license-activation-gate's null_resource id, produced only after the License CR was applied and the operator reported .status.state == Active. Not a literal true.",
         "used_by": [],
         "sensitive": false
       }
     ]
   },
   "providers": {
-    "required": ["aws", "local", "null"],
+    "required": [
+      "aws",
+      "local",
+      "null"
+    ],
     "optional": []
   },
   "deployment": {
     "order": 60,
     "estimated_time": "5-10 minutes (waiting for CNE controller pod creation + rollout)",
     "requires_user_input": true,
-    "sensitive_inputs": ["aws_access_key_id", "aws_secret_access_key", "aws_session_token", "jwt_token"]
+    "sensitive_inputs": [
+      "aws_access_key_id",
+      "aws_secret_access_key",
+      "aws_session_token",
+      "jwt_token"
+    ]
   }
 }

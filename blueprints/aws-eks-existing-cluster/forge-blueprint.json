@@ -2,7 +2,7 @@
   "schema_version": 1,
   "blueprint": {
     "id": "aws-eks-existing-cluster",
-    "version": "0.8.0",
+    "version": "0.8.1",
     "name": "Existing EKS + BNK 2.2",
     "description": "Install the BNK 2.2 platform onto an existing AWS EKS cluster."
   },
@@ -52,13 +52,22 @@
   "inputs": {
     "required": [
       {
+        "name": "eks_cluster_name",
+        "type": "string",
+        "description": "Name of the existing EKS cluster.",
+        "order": 20
+      }
+    ],
+    "optional": [
+      {
         "name": "aws_access_key_id",
         "type": "string",
         "description": "Auto-filled from the AWS credential template.",
         "sensitive": true,
         "source": "credential_template",
         "source_field": "aws_access_key_id",
-        "order": 10
+        "order": 10,
+        "default": ""
       },
       {
         "name": "aws_secret_access_key",
@@ -67,7 +76,8 @@
         "sensitive": true,
         "source": "credential_template",
         "source_field": "aws_secret_access_key",
-        "order": 11
+        "order": 11,
+        "default": ""
       },
       {
         "name": "aws_region",
@@ -77,14 +87,6 @@
         "source_field": "region",
         "order": 12
       },
-      {
-        "name": "eks_cluster_name",
-        "type": "string",
-        "description": "Name of the existing EKS cluster.",
-        "order": 20
-      }
-    ],
-    "optional": [
       {
         "name": "aws_session_token",
         "type": "string",
@@ -105,7 +107,7 @@
       {
         "name": "tmm_replicas",
         "type": "number",
-        "description": "TMM replicas. 0 = auto-derive from cluster AZ × node count.",
+        "description": "TMM replicas. 0 = auto-derive from cluster AZ \u00d7 node count.",
         "default": 0,
         "order": 31
       },
@@ -123,7 +125,7 @@
       "id": "cluster-register",
       "name": "EKS Cluster Register",
       "module": "modules/eks-cluster-register",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "depends_on": [],
       "inputs": {
         "aws_access_key_id": "${aws_access_key_id}",
@@ -183,7 +185,7 @@
       "id": "cneinstall",
       "name": "CNEInstance + IRSA",
       "module": "modules/eks-cluster-cneinstall",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "depends_on": [
         "flo"
       ],
