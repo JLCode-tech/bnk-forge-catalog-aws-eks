@@ -668,15 +668,34 @@ resource "null_resource" "spkvlan_gatewayclass" {
       wait_crd f5-spk-vlans.k8s.f5net.com
       wait_crd gatewayclasses.gateway.networking.k8s.io
 
-      echo "=== Applying F5SPKVlan (ext-vlan/int-vlan) ==="
-      cat <<'SPK' | $KUBECTL apply -f -
+      echo "=== Applying F5SPKVlan (ext-vlan/int-vlan) (with webhook readiness retry) ==="
+      spk_applied=0
+      for attempt in $(seq 1 36); do
+        if cat <<'SPK' | $KUBECTL apply -f -
 ${local.f5spkvlan_manifest}
 SPK
+        then
+          spk_applied=1
+          break
+        fi
+        echo "Webhook f5-validation-svc not ready yet (attempt $attempt/36); retrying in 5s..."
+        sleep 5
+      done
+      if [ "$spk_applied" -ne 1 ]; then
+        echo "ERROR: Failed to apply F5SPKVlan after 36 attempts"
+        exit 1
+      fi
 
       echo "=== Applying GatewayClass ${local.gatewayclass_name} ==="
-      cat <<'GWC' | $KUBECTL apply -f -
+      for attempt in $(seq 1 12); do
+        if cat <<'GWC' | $KUBECTL apply -f -
 ${local.gatewayclass_manifest}
 GWC
+        then
+          break
+        fi
+        sleep 5
+      done
       echo "=== host-device dataplane CRs applied ==="
     EOT
   }
