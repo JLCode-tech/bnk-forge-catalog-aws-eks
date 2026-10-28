@@ -2,12 +2,14 @@ variable "aws_access_key_id" {
   description = "AWS access key ID. Resolved by Forge's credential template at deploy time. Populated regardless of the template's auth method (access_keys / profile / sso) — Forge normalizes all three via boto3 before injecting."
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 variable "aws_secret_access_key" {
   description = "AWS secret access key. Resolved by Forge's credential template at deploy time. Populated regardless of auth method."
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 variable "aws_session_token" {
