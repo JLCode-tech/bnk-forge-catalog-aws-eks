@@ -75,7 +75,33 @@ case "$args" in
     exit 1
     ;;
   *'.status.state'*)
+    if [ -n "${MOCK_INITIAL_STATE:-}" ] && [ -n "${MOCK_STATE_PHASE_FILE:-}" ] && [ ! -f "$MOCK_STATE_PHASE_FILE" ]; then
+      touch "$MOCK_STATE_PHASE_FILE"
+      printf '%s' "$MOCK_INITIAL_STATE"
+      exit 0
+    fi
     printf '%s' "${MOCK_STATE:-}"
+    exit 0
+    ;;
+  *"delete license"*)
+    if [ -n "${MOCK_APPLY_LOG:-}" ]; then
+      echo "ARGV: kubectl $args" >> "$MOCK_APPLY_LOG"
+    fi
+    echo "license.k8s.f5net.com \"bnk-license\" deleted"
+    exit 0
+    ;;
+  *"delete secret"*)
+    if [ -n "${MOCK_APPLY_LOG:-}" ]; then
+      echo "ARGV: kubectl $args" >> "$MOCK_APPLY_LOG"
+    fi
+    echo "secret deleted"
+    exit 0
+    ;;
+  *"rollout"*)
+    if [ -n "${MOCK_APPLY_LOG:-}" ]; then
+      echo "ARGV: kubectl $args" >> "$MOCK_APPLY_LOG"
+    fi
+    echo "deployment.apps/f5-spk-cwc restarted"
     exit 0
     ;;
   *"get pods"*)
