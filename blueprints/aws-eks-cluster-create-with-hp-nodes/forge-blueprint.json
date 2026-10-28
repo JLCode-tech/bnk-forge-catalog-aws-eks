@@ -2,7 +2,7 @@
   "schema_version": 1,
   "blueprint": {
     "id": "aws-eks-cluster-create-with-hp-nodes",
-    "version": "0.5.0",
+    "version": "0.5.1",
     "name": "Create EKS + HP + BNK 2.4.1",
     "description": "Provision a new AWS EKS cluster + a dedicated HP TMM node pool (dual secondary ENIs) and install the BNK 2.4.1 platform."
   },
@@ -10,7 +10,9 @@
   "category": "infrastructure",
   "cloud_provider": "aws",
   "compatibility": {
-    "supported_platform_profiles": ["aws_eks"],
+    "supported_platform_profiles": [
+      "aws_eks"
+    ],
     "required_capabilities": []
   },
   "icon": "Cloud",
@@ -49,32 +51,6 @@
   "inputs": {
     "required": [
       {
-        "name": "aws_access_key_id",
-        "type": "string",
-        "description": "Auto-filled from the AWS credential template.",
-        "sensitive": true,
-        "source": "credential_template",
-        "source_field": "aws_access_key_id",
-        "order": 10
-      },
-      {
-        "name": "aws_secret_access_key",
-        "type": "string",
-        "description": "Auto-filled from the AWS credential template.",
-        "sensitive": true,
-        "source": "credential_template",
-        "source_field": "aws_secret_access_key",
-        "order": 11
-      },
-      {
-        "name": "aws_region",
-        "type": "string",
-        "description": "AWS region to deploy into.",
-        "source": "project",
-        "source_field": "region",
-        "order": 12
-      },
-      {
         "name": "eks_cluster_name",
         "type": "string",
         "description": "Name for the new EKS cluster.",
@@ -91,6 +67,34 @@
       }
     ],
     "optional": [
+      {
+        "name": "aws_access_key_id",
+        "type": "string",
+        "description": "Auto-filled from the AWS credential template.",
+        "sensitive": true,
+        "source": "credential_template",
+        "source_field": "aws_access_key_id",
+        "order": 10,
+        "default": ""
+      },
+      {
+        "name": "aws_secret_access_key",
+        "type": "string",
+        "description": "Auto-filled from the AWS credential template.",
+        "sensitive": true,
+        "source": "credential_template",
+        "source_field": "aws_secret_access_key",
+        "order": 11,
+        "default": ""
+      },
+      {
+        "name": "aws_region",
+        "type": "string",
+        "description": "AWS region to deploy into.",
+        "source": "project",
+        "source_field": "region",
+        "order": 12
+      },
       {
         "name": "aws_session_token",
         "type": "string",
@@ -157,7 +161,7 @@
       "id": "cluster-create",
       "name": "EKS Cluster Create",
       "module": "modules/eks-cluster-create",
-      "version": "0.3.0-beta",
+      "version": "0.3.1-beta",
       "depends_on": [],
       "inputs": {
         "aws_access_key_id": "${aws_access_key_id}",
@@ -174,8 +178,10 @@
       "id": "hp-nodes",
       "name": "HP TMM Node Pool",
       "module": "modules/eks-cluster-hp-nodes",
-      "version": "0.5.0-alpha",
-      "depends_on": ["cluster-create"],
+      "version": "0.5.1-alpha",
+      "depends_on": [
+        "cluster-create"
+      ],
       "inputs": {
         "aws_access_key_id": "${aws_access_key_id}",
         "aws_secret_access_key": "${aws_secret_access_key}",
@@ -190,15 +196,20 @@
       "name": "Install Multus CNI",
       "module": "modules/eks-cluster-install-multus",
       "version": "0.2.0-alpha",
-      "depends_on": ["hp-nodes"],
+      "depends_on": [
+        "hp-nodes"
+      ],
       "inputs": {}
     },
     {
       "id": "tmm-nads",
       "name": "TMM NADs (ens7/ens8)",
       "module": "modules/eks-cluster-install-tmm-nads",
-      "version": "1.0.0-alpha",
-      "depends_on": ["hp-nodes", "install-multus"],
+      "version": "1.0.1-alpha",
+      "depends_on": [
+        "hp-nodes",
+        "install-multus"
+      ],
       "inputs": {
         "aws_access_key_id": "${aws_access_key_id}",
         "aws_secret_access_key": "${aws_secret_access_key}",
@@ -226,7 +237,9 @@
       "name": "Cert-Manager",
       "module": "modules/eks-cluster-install-cert-manager",
       "version": "3.2.0",
-      "depends_on": ["bnk-prereqs"],
+      "depends_on": [
+        "bnk-prereqs"
+      ],
       "inputs": {
         "cluster_name": "${eks_cluster_name}"
       }
@@ -236,7 +249,9 @@
       "name": "BNK Cert Issuer",
       "module": "modules/eks-cluster-install-cert-issuer",
       "version": "1.0.0",
-      "depends_on": ["cert-manager"],
+      "depends_on": [
+        "cert-manager"
+      ],
       "inputs": {}
     },
     {
@@ -244,7 +259,9 @@
       "name": "F5 Lifecycle Operator",
       "module": "modules/eks-cluster-install-flo",
       "version": "2.1.0",
-      "depends_on": ["cert-issuer"],
+      "depends_on": [
+        "cert-issuer"
+      ],
       "inputs": {
         "cluster_name": "${eks_cluster_name}"
       }
@@ -253,8 +270,11 @@
       "id": "cneinstall",
       "name": "CNEInstance + IRSA",
       "module": "modules/eks-cluster-cneinstall",
-      "version": "1.3.0",
-      "depends_on": ["flo", "tmm-nads"],
+      "version": "1.3.1",
+      "depends_on": [
+        "flo",
+        "tmm-nads"
+      ],
       "inputs": {
         "aws_access_key_id": "${aws_access_key_id}",
         "aws_secret_access_key": "${aws_secret_access_key}",
@@ -264,7 +284,10 @@
         "deployment_size": "${deployment_size}",
         "tmm_replicas": "${tmm_replicas}",
         "vip_cidr": "${vip_cidr}",
-        "network_attachments": ["ens7-ipvlan-l2", "ens8-ipvlan-l2"],
+        "network_attachments": [
+          "ens7-ipvlan-l2",
+          "ens8-ipvlan-l2"
+        ],
         "jwt_token": "${jwt_token}"
       }
     }

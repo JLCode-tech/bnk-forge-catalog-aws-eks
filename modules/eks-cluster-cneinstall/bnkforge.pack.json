@@ -3,12 +3,21 @@
   "module": {
     "name": "EKS Cluster CNEInstall",
     "path": "modules/eks-cluster-cneinstall",
-    "version": "1.3.0",
+    "version": "1.3.1",
     "category": "bnk",
     "description": "Apply the CNEInstance CR on AWS EKS, lay down the cloud-network-mapping ConfigMap and (optionally) the BNKGateway CR (kind: F5BnkGateway) for VIP allocation, and wire AWS IRSA for the CNE controller (IAM role + OIDC trust + SA annotation + rollout-restart).",
     "provider": "aws",
-    "supported_platforms": ["aws_eks"],
-    "tags": ["aws", "eks", "bnk", "cneinstance", "irsa", "f5"]
+    "supported_platforms": [
+      "aws_eks"
+    ],
+    "tags": [
+      "aws",
+      "eks",
+      "bnk",
+      "cneinstance",
+      "irsa",
+      "f5"
+    ]
   },
   "deployment_pack": {
     "engine": "opentofu",
@@ -75,20 +84,6 @@
   "inputs": {
     "required": [
       {
-        "name": "aws_access_key_id",
-        "type": "string",
-        "description": "AWS access key ID. Resolved from credential template (any auth method).",
-        "source": "user",
-        "sensitive": true
-      },
-      {
-        "name": "aws_secret_access_key",
-        "type": "string",
-        "description": "AWS secret access key. Resolved from credential template.",
-        "source": "user",
-        "sensitive": true
-      },
-      {
         "name": "aws_region",
         "type": "string",
         "description": "AWS region (used for the AWS provider client).",
@@ -137,17 +132,33 @@
     ],
     "optional": [
       {
+        "name": "aws_access_key_id",
+        "type": "string",
+        "description": "AWS access key ID. Resolved from credential template (any auth method).",
+        "source": "credential_template",
+        "sensitive": true,
+        "default": ""
+      },
+      {
+        "name": "aws_secret_access_key",
+        "type": "string",
+        "description": "AWS secret access key. Resolved from credential template.",
+        "source": "credential_template",
+        "sensitive": true,
+        "default": ""
+      },
+      {
         "name": "aws_session_token",
         "type": "string",
         "description": "AWS session token (STS / SSO / assumed-role). Empty for static keys.",
         "default": "",
-        "source": "user",
+        "source": "credential_template",
         "sensitive": true
       },
       {
         "name": "operator_namespace",
         "type": "string",
-        "description": "Operator namespace — FLO, License CR, OTEL/CWC. Gold-standard split: f5-cne-core. This module applies no resources here (kept for documentation + dependency wiring).",
+        "description": "Operator namespace \u2014 FLO, License CR, OTEL/CWC. Gold-standard split: f5-cne-core. This module applies no resources here (kept for documentation + dependency wiring).",
         "default": "f5-cne-core",
         "source": "module",
         "from_module": "modules/eks-cluster-install-bnk-prereqs",
@@ -156,7 +167,7 @@
       {
         "name": "instance_namespace",
         "type": "string",
-        "description": "Instance namespace — CNEInstance CR, cloud-network CM, NADs, IRSA SA, FLO-deployed CNE controller. Gold-standard split: f5-cne-system (awsbnkctl bnkconst.InstanceNamespace).",
+        "description": "Instance namespace \u2014 CNEInstance CR, cloud-network CM, NADs, IRSA SA, FLO-deployed CNE controller. Gold-standard split: f5-cne-system (awsbnkctl bnkconst.InstanceNamespace).",
         "default": "f5-cne-system",
         "source": "module",
         "from_module": "modules/eks-cluster-install-bnk-prereqs",
@@ -183,7 +194,7 @@
       {
         "name": "flo_ready",
         "type": "boolean",
-        "description": "Dependency gate from FLO module — must be true before applying CNEInstance.",
+        "description": "Dependency gate from FLO module \u2014 must be true before applying CNEInstance.",
         "default": true,
         "source": "module",
         "from_module": "modules/eks-cluster-install-flo",
@@ -192,7 +203,7 @@
       {
         "name": "crds_installed",
         "type": "boolean",
-        "description": "Dependency gate from FLO — BNK CRDs must be registered before applying CNEInstance.",
+        "description": "Dependency gate from FLO \u2014 BNK CRDs must be registered before applying CNEInstance.",
         "default": true,
         "source": "module",
         "from_module": "modules/eks-cluster-install-flo",
@@ -241,14 +252,19 @@
         "name": "watch_namespaces",
         "type": "list(string)",
         "description": "Which namespaces the CNE controller watches for Gateway/HTTPRoute CRs. [\"All\"] = everything.",
-        "default": ["All"],
+        "default": [
+          "All"
+        ],
         "source": "user"
       },
       {
         "name": "network_attachments",
         "type": "list(string)",
-        "description": "NAD names attached to TMM, in order: [0] → trunk 1.1 (external), [1] → trunk 1.2 (internal). Host-device NADs applied by tmm-nads.",
-        "default": ["external-netdevice", "internal-netdevice"],
+        "description": "NAD names attached to TMM, in order: [0] \u2192 trunk 1.1 (external), [1] \u2192 trunk 1.2 (internal). Host-device NADs applied by tmm-nads.",
+        "default": [
+          "external-netdevice",
+          "internal-netdevice"
+        ],
         "source": "user"
       },
       {
@@ -317,7 +333,7 @@
       {
         "name": "tmm_az",
         "type": "string",
-        "description": "AZ of the single TMM node — restricts cloud-network-mapping to one AZ. Auto-wired from tmm-nads.tmm_az.",
+        "description": "AZ of the single TMM node \u2014 restricts cloud-network-mapping to one AZ. Auto-wired from tmm-nads.tmm_az.",
         "default": "",
         "source": "module",
         "from_module": "modules/eks-cluster-install-tmm-nads",
@@ -333,7 +349,7 @@
       {
         "name": "cloud_az_subnet_mappings",
         "type": "list(object({name=string,subnets=list(object({cidr=string,subnet_id=string}))}))",
-        "description": "AWS AZ → subnet mapping for the cloud-network-mapping ConfigMap. Auto-wired from eks-cluster-register.cloud_az_subnet_mappings — discovered from the EKS cluster's own VPC config, so users don't have to re-enter what EKS already knows.",
+        "description": "AWS AZ \u2192 subnet mapping for the cloud-network-mapping ConfigMap. Auto-wired from eks-cluster-register.cloud_az_subnet_mappings \u2014 discovered from the EKS cluster's own VPC config, so users don't have to re-enter what EKS already knows.",
         "default": [],
         "source": "module",
         "from_module": "modules/eks-cluster-register",

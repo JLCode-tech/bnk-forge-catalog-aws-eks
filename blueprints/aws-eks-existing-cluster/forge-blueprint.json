@@ -2,7 +2,7 @@
   "schema_version": 1,
   "blueprint": {
     "id": "aws-eks-existing-cluster",
-    "version": "0.9.0",
+    "version": "0.9.1",
     "name": "Existing EKS + BNK 2.4.1",
     "description": "Install the BNK 2.4.1 platform onto an existing AWS EKS cluster."
   },
@@ -10,7 +10,9 @@
   "category": "bnk",
   "cloud_provider": "aws",
   "compatibility": {
-    "supported_platform_profiles": ["aws_eks"],
+    "supported_platform_profiles": [
+      "aws_eks"
+    ],
     "required_capabilities": []
   },
   "icon": "Server",
@@ -19,7 +21,14 @@
   "estimated_cost": "AWS usage-based",
   "difficulty": "intermediate",
   "maturity": "beta",
-  "tags": ["aws", "eks", "kubernetes", "bnk", "bnk-2.4.1", "register"],
+  "tags": [
+    "aws",
+    "eks",
+    "kubernetes",
+    "bnk",
+    "bnk-2.4.1",
+    "register"
+  ],
   "prerequisites": [
     {
       "type": "kubernetes_cluster",
@@ -44,32 +53,6 @@
   "inputs": {
     "required": [
       {
-        "name": "aws_access_key_id",
-        "type": "string",
-        "description": "Auto-filled from the AWS credential template.",
-        "sensitive": true,
-        "source": "credential_template",
-        "source_field": "aws_access_key_id",
-        "order": 10
-      },
-      {
-        "name": "aws_secret_access_key",
-        "type": "string",
-        "description": "Auto-filled from the AWS credential template.",
-        "sensitive": true,
-        "source": "credential_template",
-        "source_field": "aws_secret_access_key",
-        "order": 11
-      },
-      {
-        "name": "aws_region",
-        "type": "string",
-        "description": "AWS region where the cluster resides.",
-        "source": "project",
-        "source_field": "region",
-        "order": 12
-      },
-      {
         "name": "eks_cluster_name",
         "type": "string",
         "description": "Name of the existing EKS cluster.",
@@ -86,6 +69,34 @@
       }
     ],
     "optional": [
+      {
+        "name": "aws_access_key_id",
+        "type": "string",
+        "description": "Auto-filled from the AWS credential template.",
+        "sensitive": true,
+        "source": "credential_template",
+        "source_field": "aws_access_key_id",
+        "order": 10,
+        "default": ""
+      },
+      {
+        "name": "aws_secret_access_key",
+        "type": "string",
+        "description": "Auto-filled from the AWS credential template.",
+        "sensitive": true,
+        "source": "credential_template",
+        "source_field": "aws_secret_access_key",
+        "order": 11,
+        "default": ""
+      },
+      {
+        "name": "aws_region",
+        "type": "string",
+        "description": "AWS region where the cluster resides.",
+        "source": "project",
+        "source_field": "region",
+        "order": 12
+      },
       {
         "name": "aws_session_token",
         "type": "string",
@@ -124,7 +135,7 @@
       "id": "cluster-register",
       "name": "EKS Cluster Register",
       "module": "modules/eks-cluster-register",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "depends_on": [],
       "inputs": {
         "aws_access_key_id": "${aws_access_key_id}",
@@ -139,7 +150,9 @@
       "name": "BNK Prerequisites",
       "module": "modules/eks-cluster-install-bnk-prereqs",
       "version": "1.1.0",
-      "depends_on": ["cluster-register"],
+      "depends_on": [
+        "cluster-register"
+      ],
       "inputs": {
         "cluster_name": "${eks_cluster_name}"
       }
@@ -149,7 +162,9 @@
       "name": "Cert-Manager",
       "module": "modules/eks-cluster-install-cert-manager",
       "version": "3.2.0",
-      "depends_on": ["bnk-prereqs"],
+      "depends_on": [
+        "bnk-prereqs"
+      ],
       "inputs": {
         "cluster_name": "${eks_cluster_name}"
       }
@@ -159,7 +174,9 @@
       "name": "BNK Cert Issuer",
       "module": "modules/eks-cluster-install-cert-issuer",
       "version": "1.0.0",
-      "depends_on": ["cert-manager"],
+      "depends_on": [
+        "cert-manager"
+      ],
       "inputs": {}
     },
     {
@@ -167,7 +184,9 @@
       "name": "F5 Lifecycle Operator",
       "module": "modules/eks-cluster-install-flo",
       "version": "2.1.0",
-      "depends_on": ["cert-issuer"],
+      "depends_on": [
+        "cert-issuer"
+      ],
       "inputs": {
         "cluster_name": "${eks_cluster_name}"
       }
@@ -176,8 +195,10 @@
       "id": "cneinstall",
       "name": "CNEInstance + IRSA",
       "module": "modules/eks-cluster-cneinstall",
-      "version": "1.3.0",
-      "depends_on": ["flo"],
+      "version": "1.3.1",
+      "depends_on": [
+        "flo"
+      ],
       "inputs": {
         "aws_access_key_id": "${aws_access_key_id}",
         "aws_secret_access_key": "${aws_secret_access_key}",

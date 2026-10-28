@@ -3,7 +3,7 @@
   "module": {
     "name": "aws_eks_cluster_jumphost",
     "path": "modules/eks-cluster-jumphost",
-    "version": "0.1.0-alpha",
+    "version": "0.1.1-alpha",
     "category": "infra",
     "description": "Provisions a single bastion EC2 instance (jumphost) in a public subnet for an EKS cluster whose public API endpoint is CIDR-locked. Generates an RSA-4096 key pair, attaches an IAM role with AmazonSSMManagedInstanceCore + eks:DescribeCluster, assigns an Elastic IP, and bootstraps kubectl via aws eks update-kubeconfig at first boot. SSH inbound is locked to the operator source IP (/32). SSM Session Manager is available as a fallback.",
     "provider": "aws",
@@ -47,26 +47,12 @@
     "optional": [
       {
         "module": "modules/eks-cluster-create",
-        "reason": "Greenfield upstream — emits the same vpc_id / public_subnet_ids / cluster_name output shape so this module works identically for new clusters."
+        "reason": "Greenfield upstream \u2014 emits the same vpc_id / public_subnet_ids / cluster_name output shape so this module works identically for new clusters."
       }
     ]
   },
   "inputs": {
     "required": [
-      {
-        "name": "aws_access_key_id",
-        "type": "string",
-        "description": "AWS access key ID. Resolved by Forge's credential template at deploy time (any auth method).",
-        "source": "user",
-        "sensitive": true
-      },
-      {
-        "name": "aws_secret_access_key",
-        "type": "string",
-        "description": "AWS secret access key.",
-        "source": "user",
-        "sensitive": true
-      },
       {
         "name": "aws_region",
         "type": "string",
@@ -106,10 +92,26 @@
     ],
     "optional": [
       {
+        "name": "aws_access_key_id",
+        "type": "string",
+        "description": "AWS access key ID. Resolved by Forge's credential template at deploy time (any auth method).",
+        "source": "credential_template",
+        "sensitive": true,
+        "default": ""
+      },
+      {
+        "name": "aws_secret_access_key",
+        "type": "string",
+        "description": "AWS secret access key.",
+        "source": "credential_template",
+        "sensitive": true,
+        "default": ""
+      },
+      {
         "name": "aws_session_token",
         "type": "string",
         "description": "AWS session token. Populated for STS / SSO / assumed-role; empty for static keys.",
-        "source": "user",
+        "source": "credential_template",
         "sensitive": true,
         "default": ""
       },

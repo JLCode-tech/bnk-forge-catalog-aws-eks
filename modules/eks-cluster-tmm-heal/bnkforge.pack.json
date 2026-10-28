@@ -3,12 +3,22 @@
   "module": {
     "name": "aws_eks_cluster_tmm_heal",
     "path": "modules/eks-cluster-tmm-heal",
-    "version": "1.0.0-alpha",
+    "version": "1.0.1-alpha",
     "category": "bnk",
-    "description": "Best-effort BNK 2.3 cold-start heals (awsbnkctl phase24/24b/24c): cwc DNS-warmup force-bounce, dssm --insecure TLS overlay + pod bounce, and f5-tmm-pod-manager rollout-restart on kube-proxy race. Runs after cneinstall and before the readiness gate. Never a gate — always exits 0.",
+    "description": "Best-effort BNK 2.3 cold-start heals (awsbnkctl phase24/24b/24c): cwc DNS-warmup force-bounce, dssm --insecure TLS overlay + pod bounce, and f5-tmm-pod-manager rollout-restart on kube-proxy race. Runs after cneinstall and before the readiness gate. Never a gate \u2014 always exits 0.",
     "provider": "aws",
-    "supported_platforms": ["aws_eks"],
-    "tags": ["aws", "eks", "bnk", "tmm", "heal", "cold-start", "reliability"],
+    "supported_platforms": [
+      "aws_eks"
+    ],
+    "tags": [
+      "aws",
+      "eks",
+      "bnk",
+      "tmm",
+      "heal",
+      "cold-start",
+      "reliability"
+    ],
     "maturity": "alpha"
   },
   "deployment_pack": {
@@ -43,20 +53,6 @@
   "inputs": {
     "required": [
       {
-        "name": "aws_access_key_id",
-        "type": "string",
-        "description": "AWS access key ID. Resolved by Forge's credential template.",
-        "source": "user",
-        "sensitive": true
-      },
-      {
-        "name": "aws_secret_access_key",
-        "type": "string",
-        "description": "AWS secret access key.",
-        "source": "user",
-        "sensitive": true
-      },
-      {
         "name": "aws_region",
         "type": "string",
         "description": "AWS region.",
@@ -65,16 +61,32 @@
       {
         "name": "eks_cluster_name",
         "type": "string",
-        "description": "EKS cluster name — used to refresh an exec-auth kubeconfig. Auto-wired from the blueprint eks_cluster_name input.",
+        "description": "EKS cluster name \u2014 used to refresh an exec-auth kubeconfig. Auto-wired from the blueprint eks_cluster_name input.",
         "source": "user"
       }
     ],
     "optional": [
       {
+        "name": "aws_access_key_id",
+        "type": "string",
+        "description": "AWS access key ID. Resolved by Forge's credential template.",
+        "source": "credential_template",
+        "sensitive": true,
+        "default": ""
+      },
+      {
+        "name": "aws_secret_access_key",
+        "type": "string",
+        "description": "AWS secret access key.",
+        "source": "credential_template",
+        "sensitive": true,
+        "default": ""
+      },
+      {
         "name": "aws_session_token",
         "type": "string",
         "description": "AWS session token (STS / SSO / assumed-role).",
-        "source": "user",
+        "source": "credential_template",
         "sensitive": true,
         "default": ""
       },
@@ -99,7 +111,7 @@
       {
         "name": "cneinstall_ready",
         "type": "boolean",
-        "description": "Ordering gate from cneinstall.host_device_applied — heals run after the CNEInstance is applied.",
+        "description": "Ordering gate from cneinstall.host_device_applied \u2014 heals run after the CNEInstance is applied.",
         "source": "module",
         "from_module": "modules/eks-cluster-cneinstall",
         "from_output": "host_device_applied",
@@ -112,7 +124,7 @@
       {
         "name": "heal_applied",
         "type": "boolean",
-        "description": "Gate output — the best-effort heals have run. The readiness gate depends on this."
+        "description": "Gate output \u2014 the best-effort heals have run. The readiness gate depends on this."
       }
     ]
   },

@@ -3,12 +3,23 @@
   "module": {
     "name": "aws_eks_cluster_install_tmm_nads",
     "path": "modules/eks-cluster-install-tmm-nads",
-    "version": "1.0.0-alpha",
+    "version": "1.0.1-alpha",
     "category": "bnk",
     "description": "Host-device TMM data-plane prep (awsbnkctl phase16/17/17c/20): labels the single role=bnk TMM node, assigns SelfIP <subnet>.240 to each tagged secondary ENI, runs an iface-discovery probe (MAC->ifname->PCI) before any TMM pod exists, and applies host-device NADs (external-netdevice/internal-netdevice, pciBusID) in f5-cne-system + default. Surfaces ifname/PCI/SelfIP/AZ for cneinstall. Multus install is handled by eks-cluster-install-multus (depends on it via multus_ready). Runs between install-multus/bnk-prereqs and cneinstall.",
     "provider": "aws",
-    "supported_platforms": ["aws_eks"],
-    "tags": ["aws", "eks", "kubernetes", "multus", "host-device", "network-attachment-definition", "tmm", "selfip"],
+    "supported_platforms": [
+      "aws_eks"
+    ],
+    "tags": [
+      "aws",
+      "eks",
+      "kubernetes",
+      "multus",
+      "host-device",
+      "network-attachment-definition",
+      "tmm",
+      "selfip"
+    ],
     "maturity": "alpha"
   },
   "deployment_pack": {
@@ -45,26 +56,12 @@
     "optional": [
       {
         "module": "modules/eks-cluster-create",
-        "reason": "Alternative upstream — emits the same vpc_id output."
+        "reason": "Alternative upstream \u2014 emits the same vpc_id output."
       }
     ]
   },
   "inputs": {
     "required": [
-      {
-        "name": "aws_access_key_id",
-        "type": "string",
-        "description": "AWS access key ID. Resolved by Forge's credential template at deploy time (any auth method).",
-        "source": "user",
-        "sensitive": true
-      },
-      {
-        "name": "aws_secret_access_key",
-        "type": "string",
-        "description": "AWS secret access key.",
-        "source": "user",
-        "sensitive": true
-      },
       {
         "name": "aws_region",
         "type": "string",
@@ -88,10 +85,26 @@
     ],
     "optional": [
       {
+        "name": "aws_access_key_id",
+        "type": "string",
+        "description": "AWS access key ID. Resolved by Forge's credential template at deploy time (any auth method).",
+        "source": "credential_template",
+        "sensitive": true,
+        "default": ""
+      },
+      {
+        "name": "aws_secret_access_key",
+        "type": "string",
+        "description": "AWS secret access key.",
+        "source": "credential_template",
+        "sensitive": true,
+        "default": ""
+      },
+      {
         "name": "aws_session_token",
         "type": "string",
         "description": "AWS session token. Populated for STS / SSO / assumed-role; empty for static keys.",
-        "source": "user",
+        "source": "credential_template",
         "sensitive": true,
         "default": ""
       },
@@ -114,14 +127,14 @@
       {
         "name": "nad_external_name",
         "type": "string",
-        "description": "External host-device NAD name (→ TMM trunk 1.1). Must match cneinstall network_attachments[0].",
+        "description": "External host-device NAD name (\u2192 TMM trunk 1.1). Must match cneinstall network_attachments[0].",
         "source": "user",
         "default": "external-netdevice"
       },
       {
         "name": "nad_internal_name",
         "type": "string",
-        "description": "Internal host-device NAD name (→ TMM trunk 1.2). Must match cneinstall network_attachments[1].",
+        "description": "Internal host-device NAD name (\u2192 TMM trunk 1.2). Must match cneinstall network_attachments[1].",
         "source": "user",
         "default": "internal-netdevice"
       },
@@ -146,7 +159,7 @@
       {
         "name": "nads_applied",
         "type": "boolean",
-        "description": "Gate output — SelfIPs assigned + both host-device NADs applied."
+        "description": "Gate output \u2014 SelfIPs assigned + both host-device NADs applied."
       },
       {
         "name": "nad_external_name",
