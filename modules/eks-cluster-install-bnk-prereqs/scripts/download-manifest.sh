@@ -90,11 +90,10 @@ else
     log "No service account key file provided, assuming helm is pre-authenticated"
 fi
 
-# Normalize 2.4.1-* build tags to 2.4.1 (FLO requires manifestVersion = 2.4.1
-# because the chart archive contains bigip-k8s-manifest-2.4.1.yaml)
-if [[ "$MANIFEST_VERSION" == 2.4.1-* ]]; then
-    log "Normalizing 2.4.1 manifest tag $MANIFEST_VERSION -> 2.4.1"
-    MANIFEST_VERSION="2.4.1"
+# Resolve legacy or short 2.4.1 tags to the published FAR chart tag before helm pull
+if [ "$MANIFEST_VERSION" = "2.4.1-3.2850.1-0.0.9" ] || [ "$MANIFEST_VERSION" = "2.4.1" ]; then
+    log "Remapping 2.4.1 manifest tag $MANIFEST_VERSION -> 2.4.1-3.3175.0-0.0.527 for FAR pull"
+    MANIFEST_VERSION="2.4.1-3.3175.0-0.0.527"
 fi
 
 # Download manifest from FAR
@@ -111,6 +110,13 @@ if ! helm pull "oci://repo.f5.com/release/${CHART_NAME}" --version "$MANIFEST_VE
     else
         error_exit "Failed to download manifest. Ensure FAR authentication is configured: helm registry login -u _json_key_base64 --password-stdin https://repo.f5.com"
     fi
+fi
+
+# Normalize 2.4.1-* build tags to 2.4.1 after chart download (FLO requires
+# manifestVersion = 2.4.1 because the chart archive contains bigip-k8s-manifest-2.4.1.yaml)
+if [[ "$MANIFEST_VERSION" == 2.4.1-* ]]; then
+    log "Normalizing 2.4.1 manifest tag $MANIFEST_VERSION -> 2.4.1 for downstream FLO consumption"
+    MANIFEST_VERSION="2.4.1"
 fi
 
 # Find the downloaded tar file (should be the newest .tgz file)
