@@ -59,7 +59,7 @@ run() {
 }
 
 clear_mock() {
-  unset MOCK_CRD_PRESENT MOCK_STATE MOCK_APPLY_FAIL \
+  unset MOCK_CRD_PRESENT MOCK_STATE MOCK_INITIAL_STATE MOCK_STATE_PHASE_FILE MOCK_APPLY_FAIL \
         MOCK_PODS_JSONPATH MOCK_EVENTS_JSONPATH MOCK_APPLY_LOG \
         MOCK_APPLY_QUOTA_FAILS MOCK_APPLY_COUNTER
 }
@@ -126,6 +126,18 @@ if [ "$RC" -eq 0 ]; then ok "(quota-retry) retried through quota race → exit 0
 if grep -q "transient quota race" "$OUT_FILE"; then ok "(quota-retry) recognised the quota race"; else bad "(quota-retry) did not log the quota race"; fi
 APPLY_ATTEMPTS="$(grep -c "ARGV: kubectl apply" "$APPLY_LOG")"
 if [ "$APPLY_ATTEMPTS" -ge 3 ]; then ok "(quota-retry) retried apply ($APPLY_ATTEMPTS attempts)"; else bad "(quota-retry) expected >=3 apply attempts, got $APPLY_ATTEMPTS"; fi
+
+# --- (reg-failed-reset) existing RegistrationFailed License → purge CPCL secrets + restart f5-spk-cwc ---
+clear_mock
+export MOCK_CRD_PRESENT=1 MOCK_INITIAL_STATE="RegistrationFailed" MOCK_STATE="Active"
+PHASE_FILE="$(mktemp -u)"; export MOCK_STATE_PHASE_FILE="$PHASE_FILE"
+APPLY_LOG="$(mktemp)"; export MOCK_APPLY_LOG="$APPLY_LOG"
+run
+rm -f "$PHASE_FILE"
+if [ "$RC" -eq 0 ]; then ok "(reg-failed-reset) RegistrationFailed reset → exit 0 ($RC)"; else bad "(reg-failed-reset) expected 0 got $RC"; cat "$OUT_FILE"; fi
+if grep -q "ARGV: kubectl -n f5-operator delete license bnk-license" "$APPLY_LOG"; then ok "(reg-failed-reset) deleted stale License CR"; else bad "(reg-failed-reset) did not delete stale License CR"; fi
+if grep -q "ARGV: kubectl -n f5-operator delete secret .*initialregistrationstatus.*activationstatus" "$APPLY_LOG"; then ok "(reg-failed-reset) purged CPCL state secrets"; else bad "(reg-failed-reset) did not purge CPCL state secrets"; fi
+if grep -q "ARGV: kubectl -n f5-operator rollout restart deployment/f5-spk-cwc" "$APPLY_LOG"; then ok "(reg-failed-reset) restarted f5-spk-cwc deployment"; else bad "(reg-failed-reset) did not restart f5-spk-cwc deployment"; fi
 
 echo ""
 echo "==> $PASS passed, $FAIL failed"
