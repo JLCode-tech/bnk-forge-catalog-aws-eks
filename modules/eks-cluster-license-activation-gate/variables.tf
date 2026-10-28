@@ -24,7 +24,7 @@ variable "kubeconfig_file" {
 # =============================================================================
 
 variable "license_namespace" {
-  description = "Namespace the License CR is applied into. On the forge EKS module this is var.operator_namespace (default f5-operator) — NOT awsbnkctl's f5-cne-core. The license controller (FLO) runs here."
+  description = "Namespace the License CR is applied into — where FLO (the license controller) runs. The aws-eks-bnk23-traffic blueprint now adopts the gold-standard split and passes f5-cne-core (matches awsbnkctl OperatorNamespace / phase23)."
   type        = string
 }
 
@@ -57,21 +57,21 @@ variable "operation_mode" {
 }
 
 variable "teem_cert_url" {
-  description = "TEEM cert URL for the License CR (spec.teemCertUrl). Defaults from awsbnkctl license-cr.yaml.tmpl; override on a BNK-release bump."
+  description = "Optional custom TEEM cert URL override for the License CR (spec.teemCertUrl). Empty = CWC auto-detects prod vs test TEEM endpoints from the JWT JKU header."
   type        = string
-  default     = "https://product.apis.f5.com/ee/v1"
+  default     = ""
 }
 
 variable "teem_entitlement_url" {
-  description = "TEEM entitlement URL for the License CR (spec.teemEntitlementUrl)."
+  description = "Optional custom TEEM entitlement URL override for the License CR (spec.teemEntitlementUrl). Empty = CWC auto-detects from JWT JKU header."
   type        = string
-  default     = "https://product-s.apis.f5.com/ee/v1"
+  default     = ""
 }
 
 variable "teem_initial_config_url" {
-  description = "TEEM initial-config URL for the License CR (spec.teemInitialConfigUrl)."
+  description = "Optional custom TEEM initial-config URL override for the License CR (spec.teemInitialConfigUrl). Empty = CWC auto-detects from JWT JKU header."
   type        = string
-  default     = "https://product-s.apis.f5.com/ee/v1"
+  default     = ""
 }
 
 # =============================================================================

@@ -48,6 +48,14 @@ ACTIVATION_TIMEOUT="${ACTIVATION_TIMEOUT:-570}"
 CRD_TIMEOUT="${CRD_TIMEOUT:-300}"
 POLL_INTERVAL="${POLL_INTERVAL:-30}"
 CRD_POLL_INTERVAL="${CRD_POLL_INTERVAL:-5}"
+# The License now applies right after the CNEInstance (blueprint v0.4.0 reorder),
+# so it can race the f5-single-license-quota ResourceQuota: the quota exists but
+# its controller has not yet populated .status.used, and admission rejects the
+# License create with "Forbidden ... status unknown for quota". This is transient
+# — retry the apply until the quota controller catches up. See ledger D-031
+# NEW FINDING #1.
+APPLY_TIMEOUT="${APPLY_TIMEOUT:-180}"
+APPLY_POLL_INTERVAL="${APPLY_POLL_INTERVAL:-10}"
 
 log() { echo "[license-gate] $*" >&2; }
 
@@ -81,6 +89,18 @@ wait_for_crd() {
 # explicit and never echo the token or the rendered file.
 apply_license() {
   set +x
+  if [ "$(current_state)" = "RegistrationFailed" ]; then
+    log "existing License ${LICENSE_NAMESPACE}/${LICENSE_NAME} is in RegistrationFailed state — resetting stale License CR, CPCL secrets, and f5-spk-cwc pod before re-applying"
+    $KUBECTL -n "$LICENSE_NAMESPACE" delete license "$LICENSE_NAME" --ignore-not-found >/dev/null 2>&1 || true
+    $KUBECTL -n "$LICENSE_NAMESPACE" delete secret \
+      cpcl-config-secret cpcl-key-secret licensestatus initialregistrationstatus \
+      switchlicensestatus modeofoperation cwc-license-certs activationmessage \
+      activationstatus context statehistory telemetryreports telemetrystatus \
+      registrationstatus certstatus entitlementstatus \
+      --ignore-not-found >/dev/null 2>&1 || true
+    $KUBECTL -n "$LICENSE_NAMESPACE" rollout restart deployment/f5-spk-cwc >/dev/null 2>&1 || true
+    $KUBECTL -n "$LICENSE_NAMESPACE" rollout status deployment/f5-spk-cwc --timeout=120s >/dev/null 2>&1 || true
+  fi
   MANIFEST_FILE="$(mktemp)"
   chmod 0600 "$MANIFEST_FILE"
   # Substitute the placeholder with the raw JWT. Use bash string replacement so
@@ -88,16 +108,39 @@ apply_license() {
   # 0600 temp file.
   printf '%s\n' "${LICENSE_MANIFEST//__JWT__/$LICENSE_JWT}" > "$MANIFEST_FILE"
 
-  log "applying License ${LICENSE_NAMESPACE}/${LICENSE_NAME} (server-side, field-manager=${FIELD_MANAGER})"
-  if ! $KUBECTL apply --server-side --force-conflicts \
-      --field-manager "$FIELD_MANAGER" -f "$MANIFEST_FILE" >&2; then
-    log "ERROR: kubectl apply of License ${LICENSE_NAMESPACE}/${LICENSE_NAME} failed"
-    return 1
-  fi
-  # Drop the JWT-bearing file as soon as it is applied.
-  rm -f "$MANIFEST_FILE"
-  MANIFEST_FILE=""
-  return 0
+  log "applying License ${LICENSE_NAMESPACE}/${LICENSE_NAME} (server-side, field-manager=${FIELD_MANAGER}, max ${APPLY_TIMEOUT}s)"
+  # SSA is idempotent, so retrying the apply is always safe. We retry on ANY
+  # failure within APPLY_TIMEOUT — the dominant transient is the ResourceQuota
+  # race ("status unknown for quota"), which clears once the quota controller
+  # populates .status.used (seconds-to-minutes after the quota is created).
+  local elapsed=0 out
+  while :; do
+    # Capture combined output so we can recognise the transient quota race
+    # WITHOUT echoing the JWT — kubectl's Forbidden/quota error references field
+    # paths, not the spec.token value, and on success the output is just the
+    # "...serverside-applied" line.
+    if out="$($KUBECTL apply --server-side --force-conflicts \
+        --field-manager "$FIELD_MANAGER" -f "$MANIFEST_FILE" 2>&1)"; then
+      printf '%s\n' "$out" >&2
+      # Drop the JWT-bearing file as soon as it is applied.
+      rm -f "$MANIFEST_FILE"
+      MANIFEST_FILE=""
+      return 0
+    fi
+    if printf '%s' "$out" | grep -q 'status unknown for quota'; then
+      log "License apply rejected: f5-single-license-quota .status not yet populated (transient quota race)"
+    else
+      printf '%s\n' "$out" >&2
+      log "License apply failed (transient?) — will retry"
+    fi
+    if [ "$elapsed" -ge "$APPLY_TIMEOUT" ]; then
+      log "ERROR: kubectl apply of License ${LICENSE_NAMESPACE}/${LICENSE_NAME} still failing after ${APPLY_TIMEOUT}s"
+      return 1
+    fi
+    sleep "$APPLY_POLL_INTERVAL"
+    elapsed=$((elapsed + APPLY_POLL_INTERVAL))
+    log "[${elapsed}/${APPLY_TIMEOUT}s] retrying License apply"
+  done
 }
 
 # --- License state read (mirror phase25 licState) ----------------------------
