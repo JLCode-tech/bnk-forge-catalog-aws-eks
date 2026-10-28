@@ -51,7 +51,7 @@
         "source": "module",
         "from_module": "modules/eks-cluster-install-bnk-prereqs",
         "from_output": "flo_version",
-        "default": "v2.30.1-0.0.8"
+        "default": "v2.30.0-0.11.4"
       },
       {
         "name": "far_secret_name",

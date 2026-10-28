@@ -77,8 +77,8 @@
       {
         "name": "bnk_manifest_version",
         "type": "string",
-        "description": "BNK manifest version to download from FAR (e.g. 2.4.1-3.2850.1-0.0.9). Must start with X.Y.Z- format.",
-        "default": "2.4.1-3.2850.1-0.0.9",
+        "description": "BNK manifest version to download from FAR (e.g. 2.4.1-3.3175.0-0.0.527). Must start with X.Y.Z- format.",
+        "default": "2.4.1-3.3175.0-0.0.527",
         "source": "user"
       },
       {

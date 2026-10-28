@@ -45,7 +45,7 @@ output "flo_version" {
 
 output "manifest_version" {
   description = "BNK manifest version used"
-  value       = var.bnk_manifest_version
+  value       = lookup(data.external.manifest_download.result, "manifest_version", var.bnk_manifest_version)
 }
 
 output "component_versions" {

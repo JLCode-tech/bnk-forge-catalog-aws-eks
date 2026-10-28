@@ -97,7 +97,7 @@ variable "jwt_token" {
 variable "manifest_version" {
   description = "BNK manifest version. Auto-wired from bnk-prereqs.manifest_version."
   type        = string
-  default     = "2.4.1-3.2850.1-0.0.9"
+  default     = "2.4.1-3.3175.0-0.0.527"
 }
 
 variable "far_secret_name" {

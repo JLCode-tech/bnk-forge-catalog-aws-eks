@@ -90,10 +90,26 @@ else
     log "No service account key file provided, assuming helm is pre-authenticated"
 fi
 
+# Normalize legacy 2.4.1 placeholder tag to the published FAR tag
+if [ "$MANIFEST_VERSION" = "2.4.1-3.2850.1-0.0.9" ]; then
+    log "Remapping legacy 2.4.1 manifest tag $MANIFEST_VERSION -> 2.4.1-3.3175.0-0.0.527"
+    MANIFEST_VERSION="2.4.1-3.3175.0-0.0.527"
+fi
+
 # Download manifest from FAR
 log "Downloading manifest from FAR..."
 if ! helm pull "oci://repo.f5.com/release/${CHART_NAME}" --version "$MANIFEST_VERSION" >/dev/null 2>&1; then
-    error_exit "Failed to download manifest. Ensure FAR authentication is configured: helm registry login -u _json_key_base64 --password-stdin https://repo.f5.com"
+    BASE_VER="${MANIFEST_VERSION%%-*}"
+    FALLBACK_TAG=""
+    if command -v oras >/dev/null 2>&1 && [ -f "${HOME}/.config/helm/registry/config.json" ]; then
+        FALLBACK_TAG=$(oras repo tags --registry-config "${HOME}/.config/helm/registry/config.json" "repo.f5.com/release/${CHART_NAME}" 2>/dev/null | grep -E "^${BASE_VER}-" | tail -n1 || true)
+    fi
+    if [ -n "$FALLBACK_TAG" ] && helm pull "oci://repo.f5.com/release/${CHART_NAME}" --version "$FALLBACK_TAG" >/dev/null 2>&1; then
+        log "Resolved manifest version $MANIFEST_VERSION -> $FALLBACK_TAG from FAR tags"
+        MANIFEST_VERSION="$FALLBACK_TAG"
+    else
+        error_exit "Failed to download manifest. Ensure FAR authentication is configured: helm registry login -u _json_key_base64 --password-stdin https://repo.f5.com"
+    fi
 fi
 
 # Find the downloaded tar file (should be the newest .tgz file)
