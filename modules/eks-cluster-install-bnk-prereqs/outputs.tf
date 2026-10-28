@@ -45,7 +45,11 @@ output "flo_version" {
 
 output "manifest_version" {
   description = "BNK manifest version used"
-  value       = lookup(data.external.manifest_download.result, "manifest_version", var.bnk_manifest_version)
+  value = (
+    startswith(lookup(data.external.manifest_download.result, "manifest_version", var.bnk_manifest_version), "2.4.1-")
+    ? "2.4.1"
+    : lookup(data.external.manifest_download.result, "manifest_version", var.bnk_manifest_version)
+  )
 }
 
 output "component_versions" {

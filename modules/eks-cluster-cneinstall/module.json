@@ -72,7 +72,7 @@
         "source": "module",
         "from_module": "modules/eks-cluster-install-bnk-prereqs",
         "from_output": "manifest_version",
-        "default": "2.4.1-3.3175.0-0.0.527"
+        "default": "2.4.1"
       },
       {
         "name": "jwt_token",

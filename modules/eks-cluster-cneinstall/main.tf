@@ -178,10 +178,16 @@ locals {
   external_ifname = var.external_ifname != "" ? var.external_ifname : "ens8"
   internal_ifname = var.internal_ifname != "" ? var.internal_ifname : "ens7"
 
+  # FLO looks up bigip-k8s-manifest-<manifestVersion>.yaml inside the pulled OCI
+  # chart. For BNK 2.4.1, the chart archive contains bigip-k8s-manifest-2.4.1.yaml
+  # (with releases[0].version = 2.4.1), so any 2.4.1-* build tag must be normalized
+  # to "2.4.1" in CNEInstance.spec.manifestVersion.
+  effective_manifest_version = startswith(var.manifest_version, "2.4.1-") ? "2.4.1" : var.manifest_version
+
   cneinstance_manifest = templatefile("${path.module}/manifests/cneinstance.yaml.tftpl", {
     instance_name         = var.instance_name
     instance_namespace    = var.instance_namespace
-    manifest_version      = var.manifest_version
+    manifest_version      = local.effective_manifest_version
     cluster_issuer_name   = var.cluster_issuer_name
     deployment_size       = var.deployment_size
     storage_class_name    = var.storage_class_name

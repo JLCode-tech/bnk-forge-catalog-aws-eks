@@ -67,7 +67,7 @@
         "name": "bnk_manifest_version",
         "type": "string",
         "description": "BNK manifest version to download from FAR",
-        "default": "2.4.1-3.3175.0-0.0.527",
+        "default": "2.4.1",
         "source": "user"
       },
       {

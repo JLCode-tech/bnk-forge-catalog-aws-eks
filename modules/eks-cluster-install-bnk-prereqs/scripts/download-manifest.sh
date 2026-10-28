@@ -90,10 +90,11 @@ else
     log "No service account key file provided, assuming helm is pre-authenticated"
 fi
 
-# Normalize legacy 2.4.1 placeholder tag to the published FAR tag
-if [ "$MANIFEST_VERSION" = "2.4.1-3.2850.1-0.0.9" ]; then
-    log "Remapping legacy 2.4.1 manifest tag $MANIFEST_VERSION -> 2.4.1-3.3175.0-0.0.527"
-    MANIFEST_VERSION="2.4.1-3.3175.0-0.0.527"
+# Normalize 2.4.1-* build tags to 2.4.1 (FLO requires manifestVersion = 2.4.1
+# because the chart archive contains bigip-k8s-manifest-2.4.1.yaml)
+if [[ "$MANIFEST_VERSION" == 2.4.1-* ]]; then
+    log "Normalizing 2.4.1 manifest tag $MANIFEST_VERSION -> 2.4.1"
+    MANIFEST_VERSION="2.4.1"
 fi
 
 # Download manifest from FAR
