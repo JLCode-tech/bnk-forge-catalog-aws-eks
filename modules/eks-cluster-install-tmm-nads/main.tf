@@ -41,9 +41,9 @@ resource "null_resource" "discovery" {
     environment = {
       EKS_CLUSTER_NAME      = var.eks_cluster_name
       AWS_REGION            = var.aws_region
-      AWS_ACCESS_KEY_ID     = var.aws_access_key_id
-      AWS_SECRET_ACCESS_KEY = var.aws_secret_access_key
-      AWS_SESSION_TOKEN     = var.aws_session_token
+      AWS_ACCESS_KEY_ID     = var.aws_access_key_id != "" ? var.aws_access_key_id : null
+      AWS_SECRET_ACCESS_KEY = var.aws_secret_access_key != "" ? var.aws_secret_access_key : null
+      AWS_SESSION_TOKEN     = var.aws_session_token != "" ? var.aws_session_token : null
       NAD_NAMESPACE         = var.nad_namespace
       EXT_NAD_NAME          = var.nad_external_name
       INT_NAD_NAME          = var.nad_internal_name
