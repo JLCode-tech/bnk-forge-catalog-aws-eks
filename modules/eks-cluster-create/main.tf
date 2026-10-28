@@ -36,6 +36,13 @@ provider "aws" {
 
 data "aws_availability_zones" "available" {
   state = "available"
+
+  # Exclude opted-in AWS Local Zones and Wavelength Zones (e.g. ap-southeast-2-per-1a),
+  # which do not support EKS control planes or NAT Gateways.
+  filter {
+    name   = "opt-in-status"
+    values = ["opt-in-not-required"]
+  }
 }
 
 locals {
