@@ -2,7 +2,7 @@
   "schema_version": 1,
   "blueprint": {
     "id": "aws-eks-bnk23-traffic",
-    "version": "0.5.8",
+    "version": "0.5.9",
     "name": "Create EKS + BNK 2.3 Traffic-Ready",
     "description": "Provision a new AWS EKS cluster with an HP TMM node pool, install the full BNK 2.3 platform, and activate the license \u2014 production defaults locked in, override sizing if needed."
   },
@@ -67,7 +67,8 @@
         "sensitive": true,
         "source": "credential_template",
         "source_field": "aws_access_key_id",
-        "order": 10
+        "order": 10,
+        "default": ""
       },
       {
         "name": "aws_secret_access_key",
@@ -76,7 +77,8 @@
         "sensitive": true,
         "source": "credential_template",
         "source_field": "aws_secret_access_key",
-        "order": 11
+        "order": 11,
+        "default": ""
       },
       {
         "name": "aws_region",
@@ -168,7 +170,7 @@
       "id": "cluster-create",
       "name": "EKS Cluster Create",
       "module": "modules/eks-cluster-create",
-      "version": "0.3.0-beta",
+      "version": "0.3.1-beta",
       "depends_on": [],
       "inputs": {
         "aws_access_key_id": "${aws_access_key_id}",
@@ -186,7 +188,7 @@
       "id": "hp-nodes",
       "name": "HP TMM Node Pool",
       "module": "modules/eks-cluster-hp-nodes",
-      "version": "0.5.0-alpha",
+      "version": "0.5.1-alpha",
       "depends_on": [
         "cluster-create"
       ],
@@ -224,7 +226,7 @@
       "id": "tmm-nads",
       "name": "TMM Host-Device Dataplane",
       "module": "modules/eks-cluster-install-tmm-nads",
-      "version": "1.0.0-alpha",
+      "version": "1.0.1-alpha",
       "depends_on": [
         "hp-nodes",
         "install-multus",
@@ -294,7 +296,7 @@
       "id": "cneinstall",
       "name": "CNEInstance + IRSA + Host-Device",
       "module": "modules/eks-cluster-cneinstall",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "depends_on": [
         "flo",
         "tmm-nads",
@@ -320,7 +322,7 @@
       "id": "tmm-heal",
       "name": "TMM Cold-Start Heals",
       "module": "modules/eks-cluster-tmm-heal",
-      "version": "1.0.0-alpha",
+      "version": "1.0.1-alpha",
       "depends_on": [
         "license-gate"
       ],

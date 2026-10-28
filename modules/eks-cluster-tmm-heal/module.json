@@ -2,12 +2,14 @@
   "module": {
     "name": "EKS Cluster TMM Cold-Start Heals",
     "path": "modules/eks-cluster-tmm-heal",
-    "version": "1.0.0-alpha",
+    "version": "1.0.1-alpha",
     "layer": "application",
     "category": "bnk",
     "description": "Best-effort BNK 2.3 cold-start heals (awsbnkctl phase24/24b/24c): cwc DNS-warmup force-bounce, dssm --insecure TLS overlay, f5-tmm-pod-manager rollout-restart. Runs after cneinstall, before the readiness gate. Never a gate (always exits 0).",
     "cloud_specific": true,
-    "supported_platforms": ["aws_eks"]
+    "supported_platforms": [
+      "aws_eks"
+    ]
   },
   "source": {
     "kind": "official",
@@ -15,7 +17,9 @@
   },
   "execution": {
     "engine": "opentofu",
-    "deploy_models": ["kubernetes_manifest"]
+    "deploy_models": [
+      "kubernetes_manifest"
+    ]
   },
   "contract": {
     "metadata_version": "module-metadata/v2alpha1"
@@ -73,13 +77,17 @@
         "name": "heal_applied",
         "type": "boolean",
         "description": "Gate output: the heals have run.",
-        "used_by": ["modules/eks-cluster-cneinstance-ready-gate"],
+        "used_by": [
+          "modules/eks-cluster-cneinstance-ready-gate"
+        ],
         "sensitive": false
       }
     ]
   },
   "providers": {
-    "required": ["null"],
+    "required": [
+      "null"
+    ],
     "optional": []
   },
   "deployment": {

@@ -2,12 +2,14 @@
   "module": {
     "name": "EKS Cluster CNEInstall",
     "path": "modules/eks-cluster-cneinstall",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "layer": "application",
     "category": "bnk",
     "description": "Apply the CNEInstance CR on AWS EKS plus the AWS-specific cloud-network-mapping ConfigMap and (optional) BNKGateway CR (kind: F5BnkGateway, IPAM), and wire AWS IRSA for the CNE controller (IAM role + OIDC trust + SA annotation + rollout-restart).",
     "cloud_specific": true,
-    "supported_platforms": ["aws_eks"]
+    "supported_platforms": [
+      "aws_eks"
+    ]
   },
   "source": {
     "kind": "official",
@@ -15,7 +17,10 @@
   },
   "execution": {
     "engine": "opentofu",
-    "deploy_models": ["terraform", "kubernetes_manifest"]
+    "deploy_models": [
+      "terraform",
+      "kubernetes_manifest"
+    ]
   },
   "contract": {
     "metadata_version": "module-metadata/v2alpha1"
@@ -90,7 +95,7 @@
       {
         "name": "jwt_token",
         "type": "string",
-        "description": "F5 BNK JWT licensing token — bind to the same project secret the FLO module uses. Applied to the License CR (spec.jwt) by the license-activation-gate, which then gates on activation.",
+        "description": "F5 BNK JWT licensing token \u2014 bind to the same project secret the FLO module uses. Applied to the License CR (spec.jwt) by the license-activation-gate, which then gates on activation.",
         "source": "user",
         "sensitive": true
       }
@@ -107,7 +112,7 @@
       {
         "name": "operator_namespace",
         "type": "string",
-        "description": "Operator namespace — FLO, License CR, OTEL/CWC. Gold-standard split: f5-cne-core. This module applies no resources here.",
+        "description": "Operator namespace \u2014 FLO, License CR, OTEL/CWC. Gold-standard split: f5-cne-core. This module applies no resources here.",
         "default": "f5-cne-core",
         "source": "module",
         "from_module": "modules/eks-cluster-install-bnk-prereqs",
@@ -116,7 +121,7 @@
       {
         "name": "instance_namespace",
         "type": "string",
-        "description": "Instance namespace — CNEInstance CR, cloud-network CM, NADs, IRSA SA, CNE controller. Gold-standard split: f5-cne-system.",
+        "description": "Instance namespace \u2014 CNEInstance CR, cloud-network CM, NADs, IRSA SA, CNE controller. Gold-standard split: f5-cne-system.",
         "default": "f5-cne-system",
         "source": "module",
         "from_module": "modules/eks-cluster-install-bnk-prereqs",
@@ -201,14 +206,19 @@
         "name": "watch_namespaces",
         "type": "list(string)",
         "description": "Namespaces the CNE controller watches.",
-        "default": ["All"],
+        "default": [
+          "All"
+        ],
         "source": "user"
       },
       {
         "name": "network_attachments",
         "type": "list(string)",
-        "description": "NAD names attached to TMM, in order: [0] → trunk 1.1 (external), [1] → trunk 1.2 (internal).",
-        "default": ["external-netdevice", "internal-netdevice"],
+        "description": "NAD names attached to TMM, in order: [0] \u2192 trunk 1.1 (external), [1] \u2192 trunk 1.2 (internal).",
+        "default": [
+          "external-netdevice",
+          "internal-netdevice"
+        ],
         "source": "user"
       },
       {
@@ -293,7 +303,7 @@
       {
         "name": "cloud_az_subnet_mappings",
         "type": "list(object({name=string,subnets=list(object({cidr=string,subnet_id=string}))}))",
-        "description": "AWS AZ → subnet mapping. Auto-wired from eks-cluster-register — discovered via data.aws_subnet against the cluster's own VPC config.",
+        "description": "AWS AZ \u2192 subnet mapping. Auto-wired from eks-cluster-register \u2014 discovered via data.aws_subnet against the cluster's own VPC config.",
         "default": [],
         "source": "module",
         "from_module": "modules/eks-cluster-register",
@@ -337,7 +347,9 @@
         "name": "cneinstance_namespace",
         "type": "string",
         "description": "Namespace where the CNEInstance CR lives.",
-        "used_by": ["modules/eks-cluster-license"],
+        "used_by": [
+          "modules/eks-cluster-license"
+        ],
         "sensitive": false
       },
       {
@@ -350,13 +362,22 @@
     ]
   },
   "providers": {
-    "required": ["aws", "local", "null"],
+    "required": [
+      "aws",
+      "local",
+      "null"
+    ],
     "optional": []
   },
   "deployment": {
     "order": 60,
     "estimated_time": "5-10 minutes (waiting for CNE controller pod creation + rollout)",
     "requires_user_input": true,
-    "sensitive_inputs": ["aws_access_key_id", "aws_secret_access_key", "aws_session_token", "jwt_token"]
+    "sensitive_inputs": [
+      "aws_access_key_id",
+      "aws_secret_access_key",
+      "aws_session_token",
+      "jwt_token"
+    ]
   }
 }

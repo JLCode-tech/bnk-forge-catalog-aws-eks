@@ -2,7 +2,7 @@
   "schema_version": 1,
   "blueprint": {
     "id": "aws-eks-cluster-create",
-    "version": "0.4.2",
+    "version": "0.4.3",
     "name": "Create EKS + BNK 2.3",
     "description": "Provision a new AWS EKS cluster (VPC + 3 AZs + managed node group) and install the BNK 2.3 platform on it."
   },
@@ -48,24 +48,6 @@
   "inputs": {
     "required": [
       {
-        "name": "aws_access_key_id",
-        "type": "string",
-        "description": "Auto-filled from the AWS credential template.",
-        "sensitive": true,
-        "source": "credential_template",
-        "source_field": "aws_access_key_id",
-        "order": 10
-      },
-      {
-        "name": "aws_secret_access_key",
-        "type": "string",
-        "description": "Auto-filled from the AWS credential template.",
-        "sensitive": true,
-        "source": "credential_template",
-        "source_field": "aws_secret_access_key",
-        "order": 11
-      },
-      {
         "name": "aws_region",
         "type": "string",
         "description": "AWS region to deploy into.",
@@ -90,6 +72,26 @@
       }
     ],
     "optional": [
+      {
+        "name": "aws_access_key_id",
+        "type": "string",
+        "description": "Auto-filled from the AWS credential template.",
+        "sensitive": true,
+        "source": "credential_template",
+        "source_field": "aws_access_key_id",
+        "order": 10,
+        "default": ""
+      },
+      {
+        "name": "aws_secret_access_key",
+        "type": "string",
+        "description": "Auto-filled from the AWS credential template.",
+        "sensitive": true,
+        "source": "credential_template",
+        "source_field": "aws_secret_access_key",
+        "order": 11,
+        "default": ""
+      },
       {
         "name": "aws_session_token",
         "type": "string",
@@ -142,7 +144,7 @@
       "id": "cluster-create",
       "name": "EKS Cluster Create",
       "module": "modules/eks-cluster-create",
-      "version": "0.3.0-beta",
+      "version": "0.3.1-beta",
       "depends_on": [],
       "inputs": {
         "aws_access_key_id": "${aws_access_key_id}",
@@ -204,7 +206,7 @@
       "id": "cneinstall",
       "name": "CNEInstance + IRSA",
       "module": "modules/eks-cluster-cneinstall",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "depends_on": [
         "flo"
       ],

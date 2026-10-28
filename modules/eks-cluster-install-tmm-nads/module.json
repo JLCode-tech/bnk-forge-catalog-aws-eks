@@ -2,12 +2,14 @@
   "module": {
     "name": "EKS Cluster TMM Host-Device Dataplane",
     "path": "modules/eks-cluster-install-tmm-nads",
-    "version": "1.0.0-alpha",
+    "version": "1.0.1-alpha",
     "layer": "application",
     "category": "bnk",
     "description": "Prepares the host-device TMM data plane (awsbnkctl phase16/17/17c/20): labels the single role=bnk TMM node, assigns SelfIP <subnet>.240 to each tagged secondary ENI, runs an iface-discovery probe (MAC->ifname->PCI) before any TMM pod exists, and applies host-device NADs (external-netdevice/internal-netdevice, pciBusID) in f5-cne-system + default. Surfaces ifname/PCI/SelfIP/AZ for cneinstall. Multus install is handled by the cloud-agnostic eks-cluster-install-multus module (depends on it via multus_ready).",
     "cloud_specific": true,
-    "supported_platforms": ["aws_eks"]
+    "supported_platforms": [
+      "aws_eks"
+    ]
   },
   "source": {
     "kind": "official",
@@ -15,7 +17,9 @@
   },
   "execution": {
     "engine": "opentofu",
-    "deploy_models": ["kubernetes_manifest"]
+    "deploy_models": [
+      "kubernetes_manifest"
+    ]
   },
   "contract": {
     "metadata_version": "module-metadata/v2alpha1"
@@ -44,7 +48,7 @@
       {
         "name": "eks_cluster_name",
         "type": "string",
-        "description": "EKS cluster name — used to refresh an exec-auth kubeconfig (aws eks update-kubeconfig).",
+        "description": "EKS cluster name \u2014 used to refresh an exec-auth kubeconfig (aws eks update-kubeconfig).",
         "source": "user"
       },
       {
@@ -68,21 +72,21 @@
       {
         "name": "nad_namespace",
         "type": "string",
-        "description": "Namespace for the NADs — MUST match the CNEInstance namespace. Gold-standard split: f5-cne-system.",
+        "description": "Namespace for the NADs \u2014 MUST match the CNEInstance namespace. Gold-standard split: f5-cne-system.",
         "default": "f5-cne-system",
         "source": "user"
       },
       {
         "name": "nad_external_name",
         "type": "string",
-        "description": "External host-device NAD name (→ trunk 1.1).",
+        "description": "External host-device NAD name (\u2192 trunk 1.1).",
         "default": "external-netdevice",
         "source": "user"
       },
       {
         "name": "nad_internal_name",
         "type": "string",
-        "description": "Internal host-device NAD name (→ trunk 1.2).",
+        "description": "Internal host-device NAD name (\u2192 trunk 1.2).",
         "default": "internal-netdevice",
         "source": "user"
       },
@@ -108,83 +112,108 @@
         "name": "nads_applied",
         "type": "boolean",
         "description": "Gate output: SelfIPs assigned + both host-device NADs applied.",
-        "used_by": ["modules/eks-cluster-cneinstall"],
+        "used_by": [
+          "modules/eks-cluster-cneinstall"
+        ],
         "sensitive": false
       },
       {
         "name": "nad_external_name",
         "type": "string",
         "description": "External NAD name (cneinstall network_attachments[0]).",
-        "used_by": ["modules/eks-cluster-cneinstall"],
+        "used_by": [
+          "modules/eks-cluster-cneinstall"
+        ],
         "sensitive": false
       },
       {
         "name": "nad_internal_name",
         "type": "string",
         "description": "Internal NAD name (cneinstall network_attachments[1]).",
-        "used_by": ["modules/eks-cluster-cneinstall"],
+        "used_by": [
+          "modules/eks-cluster-cneinstall"
+        ],
         "sensitive": false
       },
       {
         "name": "external_pci",
         "type": "string",
         "description": "External ENI PCI bus id (CNEInstance PCIDEVICE env + host-device NAD).",
-        "used_by": ["modules/eks-cluster-cneinstall"],
+        "used_by": [
+          "modules/eks-cluster-cneinstall"
+        ],
         "sensitive": false
       },
       {
         "name": "internal_pci",
         "type": "string",
         "description": "Internal ENI PCI bus id.",
-        "used_by": ["modules/eks-cluster-cneinstall"],
+        "used_by": [
+          "modules/eks-cluster-cneinstall"
+        ],
         "sensitive": false
       },
       {
         "name": "external_ifname",
         "type": "string",
         "description": "External ENI Linux ifname (CLOUD_HOST_DEVICE_NAME / ROBIN_VFIO_RESOURCE_1).",
-        "used_by": ["modules/eks-cluster-cneinstall"],
+        "used_by": [
+          "modules/eks-cluster-cneinstall"
+        ],
         "sensitive": false
       },
       {
         "name": "internal_ifname",
         "type": "string",
         "description": "Internal ENI Linux ifname (ROBIN_VFIO_RESOURCE_2).",
-        "used_by": ["modules/eks-cluster-cneinstall"],
+        "used_by": [
+          "modules/eks-cluster-cneinstall"
+        ],
         "sensitive": false
       },
       {
         "name": "external_selfip",
         "type": "string",
         "description": "External TMM SelfIP (<subnet>.240) for the ext-vlan F5SPKVlan.",
-        "used_by": ["modules/eks-cluster-cneinstall"],
+        "used_by": [
+          "modules/eks-cluster-cneinstall"
+        ],
         "sensitive": false
       },
       {
         "name": "internal_selfip",
         "type": "string",
         "description": "Internal TMM SelfIP for the int-vlan F5SPKVlan.",
-        "used_by": ["modules/eks-cluster-cneinstall"],
+        "used_by": [
+          "modules/eks-cluster-cneinstall"
+        ],
         "sensitive": false
       },
       {
         "name": "selfip_prefixlen",
         "type": "number",
         "description": "TMM SelfIP prefix length (subnet prefix).",
-        "used_by": ["modules/eks-cluster-cneinstall"],
+        "used_by": [
+          "modules/eks-cluster-cneinstall"
+        ],
         "sensitive": false
       },
       {
         "name": "tmm_az",
         "type": "string",
         "description": "AZ of the single TMM node (scopes single-AZ cloud-network-mapping).",
-        "used_by": ["modules/eks-cluster-cneinstall"],
+        "used_by": [
+          "modules/eks-cluster-cneinstall"
+        ],
         "sensitive": false
       }
     ]
   },
   "providers": {
-    "required": ["local", "null"],
+    "required": [
+      "local",
+      "null"
+    ],
     "optional": []
   },
   "deployment": {

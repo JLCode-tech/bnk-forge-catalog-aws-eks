@@ -3,7 +3,7 @@
   "module": {
     "name": "aws_eks_cluster_hp_nodes",
     "path": "modules/eks-cluster-hp-nodes",
-    "version": "0.5.0-alpha",
+    "version": "0.5.1-alpha",
     "category": "infra",
     "description": "Add a dedicated high-performance EKS managed node group for hosting TMM data-plane pods. Implements the generic 3-interface TMM model: CNI (ens5, VPC CNI) + external (ens7, on TMM-external subnet) + internal (ens8, on TMM-internal subnet). Creates per-AZ subnet pairs (tagged f5-bnk-role=tmm-external / tmm-internal), an IAM node role with ENI-management permissions, a launch template that bootstraps both secondary ENIs at first boot with node.k8s.amazonaws.com/no_manage=true, and the node group with app=f5-tmm label. Used by aws-eks-existing-cluster-with-hp-nodes + aws-eks-cluster-create-with-hp-nodes blueprints.",
     "provider": "aws",
@@ -48,26 +48,12 @@
     "optional": [
       {
         "module": "modules/eks-cluster-create",
-        "reason": "Alternative upstream — emits the same output shape so HP-nodes works identically for greenfield deploys."
+        "reason": "Alternative upstream \u2014 emits the same output shape so HP-nodes works identically for greenfield deploys."
       }
     ]
   },
   "inputs": {
     "required": [
-      {
-        "name": "aws_access_key_id",
-        "type": "string",
-        "description": "AWS access key ID. Resolved by Forge's credential template at deploy time (any auth method).",
-        "source": "user",
-        "sensitive": true
-      },
-      {
-        "name": "aws_secret_access_key",
-        "type": "string",
-        "description": "AWS secret access key.",
-        "source": "user",
-        "sensitive": true
-      },
       {
         "name": "aws_region",
         "type": "string",
@@ -117,9 +103,25 @@
     ],
     "optional": [
       {
+        "name": "aws_access_key_id",
+        "type": "string",
+        "description": "AWS access key ID. Resolved by Forge's credential template at deploy time (any auth method).",
+        "source": "credential_template",
+        "sensitive": true,
+        "default": ""
+      },
+      {
+        "name": "aws_secret_access_key",
+        "type": "string",
+        "description": "AWS secret access key.",
+        "source": "credential_template",
+        "sensitive": true,
+        "default": ""
+      },
+      {
         "name": "node_security_group_id",
         "type": "string",
-        "description": "Shared EKS node security group ID. Attached to the HP node group launch template so HP nodes land in the SAME SG as the default node group; otherwise EKS uses the cluster-managed SG and cross-node pod traffic (controller↔TMM gRPC) is dropped. Resolved from cluster-create's node_security_group_id output; empty for brownfield (register) → falls back to the EKS default. See ledger D-031 NEW FINDING #2.",
+        "description": "Shared EKS node security group ID. Attached to the HP node group launch template so HP nodes land in the SAME SG as the default node group; otherwise EKS uses the cluster-managed SG and cross-node pod traffic (controller\u2194TMM gRPC) is dropped. Resolved from cluster-create's node_security_group_id output; empty for brownfield (register) \u2192 falls back to the EKS default. See ledger D-031 NEW FINDING #2.",
         "source": "module",
         "from_module": "modules/eks-cluster-register",
         "from_output": "node_security_group_id",
@@ -129,7 +131,7 @@
         "name": "aws_session_token",
         "type": "string",
         "description": "AWS session token. Populated for STS / SSO / assumed-role; empty for static keys.",
-        "source": "user",
+        "source": "credential_template",
         "sensitive": true,
         "default": ""
       },
@@ -171,14 +173,14 @@
       {
         "name": "external_eni_device_index",
         "type": "number",
-        "description": "Device index for the TMM-external secondary ENI. 2 → ens7 on AL2023 (matches ens7-ipvlan-l2 NAD default).",
+        "description": "Device index for the TMM-external secondary ENI. 2 \u2192 ens7 on AL2023 (matches ens7-ipvlan-l2 NAD default).",
         "source": "user",
         "default": 2
       },
       {
         "name": "internal_eni_device_index",
         "type": "number",
-        "description": "Device index for the TMM-internal secondary ENI. 3 → ens8 on AL2023 (matches ens8-ipvlan-l2 NAD default).",
+        "description": "Device index for the TMM-internal secondary ENI. 3 \u2192 ens8 on AL2023 (matches ens8-ipvlan-l2 NAD default).",
         "source": "user",
         "default": 3
       },
@@ -215,12 +217,12 @@
       {
         "name": "tmm_external_subnet_ids_by_az",
         "type": "map(string)",
-        "description": "AZ → TMM-external subnet ID."
+        "description": "AZ \u2192 TMM-external subnet ID."
       },
       {
         "name": "tmm_external_subnets_by_az",
         "type": "list(object({name=string,subnets=list(object({cidr=string,subnet_id=string}))}))",
-        "description": "AZ → TMM-external subnets, in cluster-register output shape."
+        "description": "AZ \u2192 TMM-external subnets, in cluster-register output shape."
       },
       {
         "name": "tmm_internal_subnet_ids",
@@ -230,12 +232,12 @@
       {
         "name": "tmm_internal_subnet_ids_by_az",
         "type": "map(string)",
-        "description": "AZ → TMM-internal subnet ID."
+        "description": "AZ \u2192 TMM-internal subnet ID."
       },
       {
         "name": "tmm_internal_subnets_by_az",
         "type": "list(object({name=string,subnets=list(object({cidr=string,subnet_id=string}))}))",
-        "description": "AZ → TMM-internal subnets, in cluster-register output shape."
+        "description": "AZ \u2192 TMM-internal subnets, in cluster-register output shape."
       },
       {
         "name": "hp_node_group_arn",
