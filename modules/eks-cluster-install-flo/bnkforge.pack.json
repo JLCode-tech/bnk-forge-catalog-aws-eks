@@ -127,6 +127,14 @@
         "description": "Container platform value passed to FLO. AWS enables cloud-aware gRPC and networking behavior — different from the upstream bnk/flo default of 'Generic'.",
         "default": "AWS",
         "source": "user"
+      },
+      {
+        "name": "cne_pull_secret",
+        "type": "string",
+        "description": "Base64-encoded Docker config JSON or service account key for F5 Artifact Registry (repo.f5.com) OCI Helm chart pull.",
+        "default": "",
+        "source": "user",
+        "sensitive": true
       }
     ]
   },

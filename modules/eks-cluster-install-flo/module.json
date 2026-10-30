@@ -109,6 +109,14 @@
         "description": "Container platform type (Generic, AWS, Azure). AWS-tuned default for this catalog — enables cloud-aware gRPC and networking.",
         "default": "AWS",
         "source": "user"
+      },
+      {
+        "name": "cne_pull_secret",
+        "type": "string",
+        "description": "Base64-encoded Docker config JSON or service account key for F5 Artifact Registry (repo.f5.com) OCI Helm chart pull",
+        "default": "",
+        "source": "user",
+        "sensitive": true
       }
     ]
   },
@@ -145,6 +153,6 @@
     "order": 50,
     "estimated_time": "5 minutes",
     "requires_user_input": false,
-    "sensitive_inputs": ["jwt_token"]
+    "sensitive_inputs": ["jwt_token", "cne_pull_secret"]
   }
 }
