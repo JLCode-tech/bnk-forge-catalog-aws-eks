@@ -54,36 +54,44 @@ fi
 #   Format B (dockerconfigjson): base64-encoded {"auths":{"repo.f5.com":{"auth":"..."}}}
 #     → extract username:password from inner auth field, then helm registry login
 if [ -n "${SERVICE_ACCOUNT_KEY_FILE:-}" ] && [ -f "$SERVICE_ACCOUNT_KEY_FILE" ]; then
-    RAW_CONTENT=$(cat "$SERVICE_ACCOUNT_KEY_FILE")
-
-    # Detect format: try base64-decode then check for "auths" key
-    DECODED_CONTENT=$(echo "$RAW_CONTENT" | base64 -d 2>/dev/null || echo "")
-    if echo "$DECODED_CONTENT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert 'auths' in d" 2>/dev/null; then
-        log "Detected dockerconfigjson format — extracting credentials"
-        # Extract the auth field from the dockerconfigjson
-        INNER_AUTH=$(echo "$DECODED_CONTENT" | python3 -c "
+    PARSED_CREDS=$(python3 - "$SERVICE_ACCOUNT_KEY_FILE" << 'PYEOF'
 import sys, json, base64
-d = json.load(sys.stdin)
-auth_b64 = d['auths']['repo.f5.com']['auth']
-decoded = base64.b64decode(auth_b64).decode('utf-8')
-# Split on first colon only — password may contain colons (JSON key)
-idx = decoded.index(':')
-username = decoded[:idx]
-password = decoded[idx+1:]
-print(f'{username}\n{password}')
-")
-        HELM_USER=$(echo "$INNER_AUTH" | head -1)
-        HELM_PASS=$(echo "$INNER_AUTH" | tail -n +2)
-        log "Authenticating to FAR as user: $HELM_USER"
-        if ! echo "$HELM_PASS" | helm registry login repo.f5.com -u "$HELM_USER" --password-stdin >/dev/null 2>&1; then
-            error_exit "Failed to authenticate to FAR (dockerconfigjson format). Check credentials."
-        fi
-    else
-        # Format A: bare service account key — use directly
-        log "Authenticating to FAR using bare service account key"
-        if ! echo "$RAW_CONTENT" | helm registry login repo.f5.com -u _json_key_base64 --password-stdin >/dev/null 2>&1; then
-            error_exit "Failed to authenticate to FAR. Check service account key file: $SERVICE_ACCOUNT_KEY_FILE"
-        fi
+
+with open(sys.argv[1], "r", encoding="utf-8", errors="replace") as fh:
+    raw = fh.read().strip()
+
+text = raw
+if not text.startswith("{"):
+    try:
+        text = base64.b64decode(text).decode("utf-8")
+    except Exception:
+        text = ""
+
+try:
+    d = json.loads(text) if text.startswith("{") else {}
+except Exception:
+    d = {}
+
+if isinstance(d, dict) and "auths" in d and isinstance(d["auths"], dict) and d["auths"]:
+    repo = d["auths"].get("repo.f5.com") or next(iter(d["auths"].values()))
+    decoded = base64.b64decode(repo["auth"]).decode("utf-8")
+    idx = decoded.index(":")
+    print(decoded[:idx])
+    print(decoded[idx+1:], end="")
+elif raw.startswith("{"):
+    b64 = base64.b64encode(raw.encode("utf-8")).decode("ascii")
+    print("_json_key_base64")
+    print(b64, end="")
+else:
+    print("_json_key_base64")
+    print(raw, end="")
+PYEOF
+)
+    HELM_USER=$(echo "$PARSED_CREDS" | head -1)
+    HELM_PASS=$(echo "$PARSED_CREDS" | tail -n +2)
+    log "Authenticating to FAR as user: $HELM_USER"
+    if ! echo "$HELM_PASS" | helm registry login repo.f5.com -u "$HELM_USER" --password-stdin >/dev/null 2>&1; then
+        error_exit "Failed to authenticate to FAR. Check service account key file: $SERVICE_ACCOUNT_KEY_FILE"
     fi
     log "FAR authentication successful"
 else

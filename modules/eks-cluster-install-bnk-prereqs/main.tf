@@ -54,17 +54,20 @@ locals {
   # The password MUST be base64(json), NOT raw json.
   # ---------------------------------------------------------------------------
 
-  # Try to base64-decode and parse as JSON to detect format
-  _decoded_secret = try(base64decode(var.cne_pull_secret), "")
+  # Try to parse as raw JSON or base64-decoded JSON to detect format
+  _trimmed_secret = trimspace(var.cne_pull_secret)
+  _is_raw_json    = startswith(local._trimmed_secret, "{")
+  _decoded_secret = local._is_raw_json ? local._trimmed_secret : try(base64decode(local._trimmed_secret), "")
   _is_dockerconfig = try(
     lookup(jsondecode(local._decoded_secret), "auths", null) != null,
     false
   )
 
   # ---------------------------------------------------------------------------
-  # Format B: extract the raw JSON key from the pre-built dockerconfigjson.
-  # The inner auth decodes to "username:password" where password is the raw
-  # JSON key (possibly pretty-printed with newlines).
+  # Format B: extract the key from the pre-built dockerconfigjson.
+  # The inner auth decodes to "username:password" where password is either
+  # raw JSON (when username is _json_key) or already base64-encoded (when
+  # username is _json_key_base64).
   # ---------------------------------------------------------------------------
   _format_b_decoded_auth = local._is_dockerconfig ? try(
     base64decode(jsondecode(local._decoded_secret)["auths"]["repo.f5.com"]["auth"]),
@@ -72,33 +75,31 @@ locals {
   ) : ""
 
   # Extract the password portion (everything after first ":")
-  # e.g. "_json_key:{...json...}" → "{...json...}"
   _format_b_raw_key = local._is_dockerconfig && local._format_b_decoded_auth != "" ? (
     length(regexall(":", local._format_b_decoded_auth)) > 0
     ? join(":", slice(split(":", local._format_b_decoded_auth), 1, length(split(":", local._format_b_decoded_auth))))
     : local._format_b_decoded_auth
   ) : ""
 
+  _format_b_b64_key = startswith(trimspace(local._format_b_raw_key), "{") ? base64encode(local._format_b_raw_key) : trimspace(local._format_b_raw_key)
+  _format_a_b64_key = local._is_raw_json ? base64encode(local._trimmed_secret) : local._trimmed_secret
+
   # ---------------------------------------------------------------------------
-  # Build the correct dockerconfigjson for both formats.
+  # Build the correct dockerconfigjson for all formats.
   #
   # Per F5 docs (create-far-namespace.html):
-  #   auth = base64("_json_key_base64:" + raw_content_of_sa_key_file)
-  # where the SA key file content is ALREADY base64-encoded.
-  #
-  # Format A: var.cne_pull_secret IS the base64-encoded SA key → use directly.
-  # Format B: we extracted raw JSON key → base64-encode it first.
+  #   auth = base64("_json_key_base64:" + base64_encoded_sa_key)
   # ---------------------------------------------------------------------------
   docker_config_json = local._is_dockerconfig ? jsonencode({
     auths = {
       "repo.f5.com" = {
-        auth = base64encode("_json_key_base64:${base64encode(local._format_b_raw_key)}")
+        auth = base64encode("_json_key_base64:${local._format_b_b64_key}")
       }
     }
     }) : jsonencode({
     auths = {
       "repo.f5.com" = {
-        auth = base64encode("_json_key_base64:${var.cne_pull_secret}")
+        auth = base64encode("_json_key_base64:${local._format_a_b64_key}")
       }
     }
   })
