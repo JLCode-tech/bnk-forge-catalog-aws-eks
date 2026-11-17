@@ -1,15 +1,13 @@
 {
   "schema_version": 1,
   "module": {
-    "name": "aws_eks_cluster_install_tmm_nads",
+    "name": "EKS Cluster Install TMM NADs",
     "path": "modules/eks-cluster-install-tmm-nads",
     "version": "1.0.1-alpha",
     "category": "bnk",
     "description": "Host-device TMM data-plane prep (awsbnkctl phase16/17/17c/20): labels the single role=bnk TMM node, assigns SelfIP <subnet>.240 to each tagged secondary ENI, runs an iface-discovery probe (MAC->ifname->PCI) before any TMM pod exists, and applies host-device NADs (external-netdevice/internal-netdevice, pciBusID) in f5-cne-system + default. Surfaces ifname/PCI/SelfIP/AZ for cneinstall. Multus install is handled by eks-cluster-install-multus (depends on it via multus_ready). Runs between install-multus/bnk-prereqs and cneinstall.",
     "provider": "aws",
-    "supported_platforms": [
-      "aws_eks"
-    ],
+    "supported_platforms": ["aws_eks"],
     "tags": [
       "aws",
       "eks",

@@ -1,24 +1,14 @@
 {
   "schema_version": 1,
   "module": {
-    "name": "aws_eks_cluster_tmm_heal",
+    "name": "EKS Cluster TMM Cold-Start Heal",
     "path": "modules/eks-cluster-tmm-heal",
     "version": "1.0.1-alpha",
     "category": "bnk",
     "description": "Best-effort BNK 2.3 cold-start heals (awsbnkctl phase24/24b/24c): cwc DNS-warmup force-bounce, dssm --insecure TLS overlay + pod bounce, and f5-tmm-pod-manager rollout-restart on kube-proxy race. Runs after cneinstall and before the readiness gate. Never a gate \u2014 always exits 0.",
     "provider": "aws",
-    "supported_platforms": [
-      "aws_eks"
-    ],
-    "tags": [
-      "aws",
-      "eks",
-      "bnk",
-      "tmm",
-      "heal",
-      "cold-start",
-      "reliability"
-    ],
+    "supported_platforms": ["aws_eks"],
+    "tags": ["aws", "eks", "bnk", "tmm", "heal", "cold-start", "reliability"],
     "maturity": "alpha"
   },
   "deployment_pack": {

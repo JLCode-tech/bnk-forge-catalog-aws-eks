@@ -1,15 +1,13 @@
 {
   "schema_version": 1,
   "module": {
-    "name": "aws_eks_cluster_jumphost",
+    "name": "EKS Cluster Bastion Jumphost",
     "path": "modules/eks-cluster-jumphost",
     "version": "0.1.1-alpha",
     "category": "infra",
     "description": "Provisions a single bastion EC2 instance (jumphost) in a public subnet for an EKS cluster whose public API endpoint is CIDR-locked. Generates an RSA-4096 key pair, attaches an IAM role with AmazonSSMManagedInstanceCore + eks:DescribeCluster, assigns an Elastic IP, and bootstraps kubectl via aws eks update-kubeconfig at first boot. SSH inbound is locked to the operator source IP (/32). SSM Session Manager is available as a fallback.",
     "provider": "aws",
-    "supported_platforms": [
-      "aws_eks"
-    ],
+    "supported_platforms": ["aws_eks"],
     "tags": [
       "aws",
       "eks",

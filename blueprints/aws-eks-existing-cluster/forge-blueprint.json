@@ -3,9 +3,14 @@
   "blueprint": {
     "id": "aws-eks-existing-cluster",
     "version": "0.9.1",
-    "name": "Existing EKS + BNK 2.4.1",
+    "name": "AWS EKS \u2014 F5 BNK on Existing Cluster",
     "description": "Install the BNK 2.4.1 platform onto an existing AWS EKS cluster."
   },
+  "family_id": "aws-eks-existing-cluster-bnk",
+  "deployment_pattern": "existing_cluster_overlay",
+  "variant_key": "standard",
+  "variant_label": "Standard (Existing Nodes)",
+  "is_recommended": true,
   "bnk_version": "2.4.1",
   "category": "bnk",
   "cloud_provider": "aws",

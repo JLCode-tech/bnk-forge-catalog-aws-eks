@@ -3,9 +3,14 @@
   "blueprint": {
     "id": "aws-eks-cluster-create-with-hp-nodes",
     "version": "0.5.1",
-    "name": "Create EKS + HP + BNK 2.4.1",
+    "name": "AWS EKS \u2014 F5 BNK Full Stack",
     "description": "Provision a new AWS EKS cluster + a dedicated HP TMM node pool (dual secondary ENIs) and install the BNK 2.4.1 platform."
   },
+  "family_id": "aws-eks-bnk",
+  "deployment_pattern": "greenfield_full_stack",
+  "variant_key": "hp-nodes",
+  "variant_label": "With HP TMM Nodes (Customizable)",
+  "is_recommended": false,
   "bnk_version": "2.4.1",
   "category": "infrastructure",
   "cloud_provider": "aws",

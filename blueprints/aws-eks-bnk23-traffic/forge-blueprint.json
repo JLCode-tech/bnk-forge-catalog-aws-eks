@@ -3,10 +3,15 @@
   "blueprint": {
     "id": "aws-eks-bnk23-traffic",
     "version": "0.5.9",
-    "name": "Create EKS + BNK 2.3 Traffic-Ready",
+    "name": "AWS EKS \u2014 F5 BNK Full Stack",
     "description": "Provision a new AWS EKS cluster with an HP TMM node pool, install the full BNK 2.3 platform, and activate the license \u2014 production defaults locked in, override sizing if needed."
   },
-  "bnk_version": "2.3",
+  "family_id": "aws-eks-bnk",
+  "deployment_pattern": "greenfield_full_stack",
+  "variant_key": "traffic",
+  "variant_label": "Traffic-Ready (HP Nodes)",
+  "is_recommended": false,
+  "bnk_version": "2.3.0",
   "category": "infrastructure",
   "cloud_provider": "aws",
   "compatibility": {

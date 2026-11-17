@@ -1,15 +1,13 @@
 {
   "schema_version": 1,
   "module": {
-    "name": "aws_eks_cluster_register_existing",
+    "name": "EKS Cluster Register Existing",
     "path": "modules/eks-cluster-register",
     "version": "1.1.1",
     "category": "infra",
     "description": "Reference an existing AWS EKS cluster and emit BNK cluster-registration outputs.",
     "provider": "aws",
-    "supported_platforms": [
-      "aws_eks"
-    ],
+    "supported_platforms": ["aws_eks"],
     "tags": [
       "aws",
       "eks",
