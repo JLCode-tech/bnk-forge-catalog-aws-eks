@@ -211,6 +211,14 @@ module "eks" {
       type                          = "ingress"
       source_cluster_security_group = true
     }
+    forge_agent_pull = {
+      description                   = "Forge edge agent telemetry pull (:17544) from the EKS control plane API proxy"
+      protocol                      = "tcp"
+      from_port                     = 17544
+      to_port                       = 17544
+      type                          = "ingress"
+      source_cluster_security_group = true
+    }
   }
 
   tags = merge(local.common_tags, {
